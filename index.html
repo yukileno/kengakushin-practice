@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>県学診 れんしゅう（算数・社会）</title>
+<style>
+:root{
+  --bg:#f4f7fb; --card:#ffffff; --ink:#1d2733; --sub:#5b6b7c; --line:#d5dee8;
+  --main:#2457a6; --main-d:#1a4283; --ok:#1b8a4b; --okbg:#e5f6ec; --ng:#c0392b; --ngbg:#fdeceb; --warn:#9a6b00; --warnbg:#fff4d6;
+}
+*{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Yu Gothic UI","Meiryo","Hiragino Sans",sans-serif;line-height:1.6}
+#app{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:1.25rem;margin:8px 0 12px}
+h2{font-size:1.05rem;margin:0 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;border:2px solid var(--main);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:#fff;color:var(--main);font-size:1rem;padding:8px 16px;cursor:pointer;font-family:inherit}
+.seg button.on{background:var(--main);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid var(--line);border-radius:999px;padding:6px 14px;background:#fff;cursor:pointer;font-size:.95rem;font-family:inherit;color:var(--ink)}
+.chip.on{border-color:var(--main);background:#e8f0fc;color:var(--main-d);font-weight:700}
+button.primary{background:var(--main);color:#fff;border:0;border-radius:10px;padding:12px 26px;font-size:1.1rem;cursor:pointer;font-family:inherit}
+button.primary:hover{background:var(--main-d)}
+button.ghost{background:#fff;color:var(--sub);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:.9rem;cursor:pointer;font-family:inherit}
+.small{font-size:.85rem;color:var(--sub)}
+.meta{display:flex;justify-content:space-between;color:var(--sub);font-size:.9rem;margin-bottom:6px}
+.bar{height:10px;background:#e4ebf3;border-radius:6px;overflow:hidden;margin-bottom:14px}
+.bar>i{display:block;height:100%;background:var(--main);transition:width .25s}
+.q{font-size:1.45rem;line-height:2;margin:6px 0 14px;word-break:break-word}
+.fig{margin:0 0 14px;color:var(--ink)}
+.homewrap{text-align:center;padding-top:6vh}
+.lead{font-size:1.1rem;color:var(--sub);margin:0 0 22px}
+.bigbtns{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
+.bigbtn{width:min(44vw,260px);min-width:150px;aspect-ratio:1/0.8;border:0;border-radius:22px;background:var(--main);color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 0 var(--main-d)}
+.bigbtn span{font-size:2.4rem;font-weight:700}
+.bigbtn small{font-size:.85rem;opacity:.9}
+.bigbtn.soc{background:#2a8a5a;box-shadow:0 4px 0 #1c6a42}
+.bigbtn:active{transform:translateY(3px);box-shadow:none}
+.tag{background:var(--warnbg);color:var(--warn);border-radius:6px;padding:1px 8px;font-size:.8rem;margin-left:6px}
+.foot{margin-top:40px}
+
+.inrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+input.ans{font-size:1.5rem;padding:10px 14px;border:2px solid var(--main);border-radius:10px;width:min(100%,360px);font-family:inherit}
+input.ans:disabled{background:#eef2f7;border-color:var(--line)}
+.unit{font-size:1.3rem}
+.hint{font-size:.85rem;color:var(--sub);margin-top:8px}
+.fb{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:1.05rem}
+.fb.ok{background:var(--okbg);color:var(--ok)}
+.fb.ng{background:var(--ngbg);color:var(--ng)}
+.fb.fmt{background:var(--warnbg);color:var(--warn)}
+.fb .ansline{font-size:1.4rem;font-weight:700;color:var(--ink);margin:6px 0}
+.fb .exp{font-size:.92rem;color:var(--ink);margin-top:4px}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .2em;line-height:1.15;font-size:.95em}
+.fr>span:first-child{border-bottom:2px solid currentColor;padding:0 .25em}
+.mx{font-size:1.15em;margin-right:.05em}
+table{border-collapse:collapse;width:100%;font-size:.95rem}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+th{color:var(--sub);font-weight:600;font-size:.85rem}
+.meter{display:inline-block;width:90px;height:8px;background:#e4ebf3;border-radius:5px;vertical-align:middle;margin-right:6px;overflow:hidden}
+.meter>i{display:block;height:100%;background:var(--ok)}
+.big{font-size:2rem;font-weight:700;color:var(--main)}
+ul.miss{padding-left:1.2em;margin:6px 0}
+ul.miss li{margin-bottom:8px}
+@media (max-width:520px){ .q{font-size:1.25rem} input.ans{font-size:1.3rem} }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="data/math.js"></script>
+<script src="data/social.js"></script>
+<script>
+'use strict';
+/* ---------- 判定 ---------- */
+const kata2hira = s => s.replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
+function normText(s, easy) {
+  let t = String(s).normalize('NFKC').replace(/[\s　。、．，.,・「」『』()（）]/g, '').replace(/^約/, '');
+  if (easy) t = kata2hira(t);
+  return t.toLowerCase();
+}
+function parseDec(raw) {
+  const s = String(raw).normalize('NFKC').replace(/[\s,]/g, '');
+  if (!/^-?(\d+\.?\d*|\.\d+)$/.test(s)) return null;
+  const m = s.match(/^(-?)(\d*)\.?(\d*)$/);
+  return { n: (m[1] ? -1 : 1) * parseInt((m[2] || '0') + (m[3] || ''), 10), scale: (m[3] || '').length };
+}
+function parseFrac(raw) {
+  let s = String(raw).normalize('NFKC').trim().replace(/と/g, ' ').replace(/\s+/g, ' ').trim();
+  let m;
+  if ((m = s.match(/^(\d+)$/))) return { w: +m[1], n: 0, d: 1, whole: true };
+  if ((m = s.match(/^(\d+)\/(\d+)$/))) return { w: 0, n: +m[1], d: +m[2], mixed: false };
+  if ((m = s.match(/^(\d+) (\d+)\/(\d+)$/))) return { w: +m[1], n: +m[2], d: +m[3], mixed: true };
+  return null;
+}
+// 戻り値 {st:'ok'|'ng'|'fmt', msg}
+function judge(q, raw, easy) {
+  const input = String(raw).trim();
+  if (!input) return { st: 'fmt', msg: '答えを入力してね。' };
+  if (q.kind === 'num') {
+    const a = parseDec(input);
+    if (!a) return { st: 'fmt', msg: '数字だけで入力してね（単位は書かなくていいよ）。' };
+    const b = parseDec(q.ans);
+    return { st: a.n * 10 ** b.scale === b.n * 10 ** a.scale ? 'ok' : 'ng' };
+  }
+  if (q.kind === 'frac') {
+    const p = parseFrac(input);
+    if (!p || p.d === 0) return { st: 'fmt', msg: '分数は 3/4、帯分数は 1と3/4 のように入力してね。' };
+    const N = p.w * p.d + p.n, D = p.d;
+    if (N * q.ans.d !== q.ans.n * D) return { st: 'ng' };
+    if (p.n > 0 && gcd(p.n, p.d) !== 1) return { st: 'fmt', msg: '大きさは合っているよ。約分しよう！' };
+    if (p.mixed && p.n >= p.d) return { st: 'fmt', msg: '帯分数の分数部分は、1より小さくしよう。' };
+    const ansWhole = q.ans.d === 1 || q.ans.n % q.ans.d === 0;
+    if (!ansWhole) {
+      if (q.form === 'imp' && p.mixed) return { st: 'fmt', msg: '仮分数（7/3 のような形）で答えよう。' };
+      if (q.form === 'mixed' && !p.mixed) return { st: 'fmt', msg: '帯分数（2と1/3 のような形）で答えよう。' };
+    }
+    return { st: 'ok' };
+  }
+  // text
+  const list = easy ? q.ans.concat(q.alt) : q.ans;
+  const x = normText(input, easy);
+  return { st: list.some(v => normText(v, easy) === x) ? 'ok' : 'ng' };
+}
+function showAnswer(q) {
+  if (q.kind === 'text') return q.ans[0];
+  if (q.kind === 'frac') return q.show;
+  return q.ans + (q.unit ? ' ' + q.unit : '');
+}
+function canonical(q) { // うちなおし用の正解（きびしく判定）
+  if (q.kind === 'text') return q.ans[0];
+  if (q.kind === 'frac') return q.show.replace(/（.*$/, '');
+  return q.ans;
+}
+
+/* ---------- 記録（この端末のブラウザの中だけ） ---------- */
+const LS = 'kgk_stats_v1';
+function loadStats() {
+  try { const o = JSON.parse(localStorage.getItem(LS)) || {}; return { unit: o.unit || {}, q: o.q || {}, g: o.g || {}, pend: o.pend || {} }; }
+  catch (e) { return { unit: {}, q: {}, g: {}, pend: {} }; }
+}
+function saveStats() { try { localStorage.setItem(LS, JSON.stringify(stats)); } catch (e) { /* 保存できなくても動く */ } }
+let stats = loadStats();
+function bump(map, key, ok) { const o = map[key] || (map[key] = { ok: 0, ng: 0 }); o[ok ? 'ok' : 'ng']++; }
+const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* 保存できなくても動く */ } };
+const getName = () => lsGet('kgk_name', '');
+const setName = v => lsSet('kgk_name', v.trim());
+const isEasy = () => lsGet('kgk_easy', '0') === '1';   // 先生用メニューで切りかえ（初期：きびしい＝漢字のみ）
+
+/* ---------- 出題の材料 ---------- */
+const MATH_GENS = [];
+MATH_UNITS.forEach(u => MATH[u].forEach((g, i) => MATH_GENS.push({ id: u + ':' + i, unit: u, gen: g })));
+const MG = Object.fromEntries(MATH_GENS.map(x => [x.id, x]));
+const SQ = Object.fromEntries(SOCIAL.map(q => [q.key, q]));
+function socialQ(q) {
+  const Q = { kind: q.isNum ? 'num' : 'text', html: esc(q.text), ans: q.isNum ? q.ans[0] : q.ans, alt: q.alt, unit: '', explain: '', key: q.key, isNum: q.isNum };
+  return Q;
+}
+function weightedPick(items, wf, n) {
+  const pool = items.slice(), out = [];
+  while (out.length < n && pool.length) {
+    const ws = pool.map(wf), tot = sum(ws); let r = Math.random() * tot, i = 0;
+    while (i < pool.length - 1 && (r -= ws[i]) > 0) i++;
+    out.push(pool.splice(i, 1)[0]);
+  }
+  return out;
+}
+const wOf = o => (o ? 0.6 + 3 * (o.ng + 0.5) / (o.ok + o.ng + 1) : 2.2);   // まちがえやすいものを出やすく
+
+/* ---------- 画面 ---------- */
+const app = $('#app');
+let R = null;   // いまの練習の状態
+
+function home() {
+  if (R) { clearTimeout(R.timer); R = null; }
+  const pend = Object.values(stats.pend);
+  const pm = pend.filter(p => p.sub === '算数').length, ps = pend.filter(p => p.sub === '社会').length;
+  app.innerHTML = `
+  <div class="homewrap">
+    <h1>県学診 れんしゅう</h1>
+    <p class="lead">やりたい きょうかを おしてね。すぐ 問題が 出るよ！</p>
+    <div class="bigbtns">
+      <button class="bigbtn" data-sub="算数"><span>算数</span>${pm ? `<small>まちがい直し ${pm}問</small>` : ''}</button>
+      <button class="bigbtn soc" data-sub="社会"><span>社会</span>${ps ? `<small>まちがい直し ${ps}問</small>` : ''}</button>
+    </div>
+    <p class="small">まちがえた問題は、あとで また 出るよ。</p>
+    <div class="foot"><button class="ghost" id="teacher">せんせい用</button></div>
+  </div>`;
+  app.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => begin(b.dataset.sub));
+  $('#teacher').onclick = teacher;
+}
+
+/* ---------- 出題 ---------- */
+function begin(subject) {
+  R = { subject, n: 0, right: 0, streak: 0, sched: [], recent: [], cur: null, phase: 'ask', msg: '', last: '', timer: null };
+  // 前にまちがえた問題を、はじめのほうに少しずつ混ぜる
+  Object.entries(stats.pend).filter(([, p]) => p.sub === subject).forEach(([id, p], i) => R.sched.push({ id, t: p.t, level: p.level, due: 2 + i * 2 }));
+  next();
+}
+function makeItem(s) {
+  if (s.id.startsWith('m|')) {
+    const m = MG[s.id.slice(2)]; if (!m) return null;
+    return { t: 'm', id: s.id, unit: m.unit, level: s.level, retry: true, q: Object.assign({ unit: m.unit }, m.gen()) };
+  }
+  const q = SQ[s.id]; if (!q) return null;
+  return { t: 's', id: s.id, unit: q.unit, level: s.level, retry: true, q: socialQ(q) };
+}
+function makeFresh() {
+  if (R.subject === '算数') {
+    const cand = MATH_GENS.filter(x => !R.recent.includes(x.id) && !R.sched.some(s => s.id === 'm|' + x.id));
+    const x = weightedPick(cand.length ? cand : MATH_GENS, x => wOf(stats.g[x.id]), 1)[0];
+    R.recent.push(x.id); if (R.recent.length > 4) R.recent.shift();
+    return { t: 'm', id: 'm|' + x.id, unit: x.unit, level: 0, retry: false, q: Object.assign({ unit: x.unit }, x.gen()) };
+  }
+  const cand = SOCIAL.filter(q => !R.recent.includes(q.key) && !R.sched.some(s => s.id === q.key));
+  const q = weightedPick(cand.length ? cand : SOCIAL, q => wOf(stats.q[q.key]), 1)[0];
+  R.recent.push(q.key); if (R.recent.length > 25) R.recent.shift();
+  return { t: 's', id: q.key, unit: q.unit, level: 0, retry: false, q: socialQ(q) };
+}
+function next() {
+  clearTimeout(R.timer);
+  let it = null;
+  const di = R.sched.findIndex(s => s.due <= R.n);
+  if (di >= 0) it = makeItem(R.sched.splice(di, 1)[0]);
+  if (!it) it = makeFresh();
+  R.n++; R.cur = it; R.phase = 'ask'; R.msg = ''; R.last = '';
+  render();
+}
+function schedule(it, level, gap) {
+  R.sched.push({ id: it.id, t: it.t, level, due: R.n + gap });
+  stats.pend[it.id] = { sub: R.subject, t: it.t, level };
+}
+function result(it, ok) {
+  if (!it.retry) {   // 初めて出た問題の結果だけを、正答率として記録する
+    bump(stats.unit, R.subject + it.unit, ok);
+    if (it.t === 's') bump(stats.q, it.id, ok); else bump(stats.g, it.id.slice(2), ok);
+  }
+  if (ok) {
+    R.right++; R.streak++;
+    if (it.level === 1) schedule(it, 2, 10);        // 1回なおせた → もう一度だけ、少しあとで
+    else if (it.level >= 2) delete stats.pend[it.id]; // 2回なおせた → 卒業
+  } else {
+    R.streak = 0; schedule(it, 1, 3);                // まちがえた → 3問あとにまた出す
+  }
+  saveStats();
+}
+
+const HINT = q => q.kind === 'frac' ? '分数は 3/4、帯分数は 1と3/4 のように入力。' : q.kind === 'num' ? '数字を入力（全角・半角どちらでもOK）。' : (isEasy() ? 'ひらがなでもOK。' : '漢字で書けるものは漢字で。');
+function render() {
+  const it = R.cur, q = it.q, ph = R.phase;
+  const tag = it.retry ? '<span class="tag">まちがい直し</span>' : '';
+  let body = '';
+  if (ph === 'ask') {
+    body = `<div class="inrow"><input class="ans" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="答え"> <span class="unit">${esc(q.unit)}</span> <button class="primary" id="go">こたえる</button></div>
+      <div class="hint">${HINT(q)}</div>${R.msg ? `<div class="fb fmt">${esc(R.msg)}</div>` : ''}
+      <div style="margin-top:14px"><button class="ghost" id="show">わからない（答えを見る）</button></div>`;
+  } else if (ph === 'ok') {
+    body = `<div class="inrow"><input class="ans" disabled value="${esc(R.last)}"> <span class="unit">${esc(q.unit)}</span></div>
+      <div class="fb ok"><b>○ せいかい！</b></div>`;
+  } else {
+    const fixed = ph === 'fixed';
+    body = `<div class="inrow"><input class="ans" disabled value="${esc(R.last)}"> <span class="unit">${esc(q.unit)}</span></div>
+      <div class="fb ng"><b>${fixed ? '答え：' : '× ざんねん。答えは…'}</b><div class="ansline">${esc(showAnswer(q))}</div>${q.explain ? `<div class="exp">${q.explain}</div>` : ''}
+      ${fixed ? '<div class="small" style="margin-top:6px">あとで また 出るよ。</div>' : `<div style="margin-top:10px;color:var(--ink)">答えを見ながら、もう一度 入力しよう。</div>
+      <div class="inrow" style="margin-top:8px"><input class="ans" id="re" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="打ち直し"> <span class="unit">${esc(q.unit)}</span> <button class="primary" id="rego">うちなおし</button></div>
+      ${R.msg ? `<div class="hint" style="color:var(--warn)">${esc(R.msg)}</div>` : ''}`}</div>
+      ${fixed ? '<div style="margin-top:12px"><button class="primary" id="nx">つぎへ（Enter）</button></div>' : ''}`;
+  }
+  app.innerHTML = `
+  <div class="card">
+    <div class="meta"><span>${esc(R.subject)} ${tag}</span><span>せいかい ${R.right}／${R.n - (ph === 'ask' ? 1 : 0)}　れんぞく ${R.streak}</span></div>
+    <div class="q">${q.html}</div>
+    ${q.fig ? `<div class="fig">${q.fig}</div>` : ''}
+    ${body}
+    <div class="row" style="margin-top:16px"><button class="ghost" id="quit">おわる</button></div>
+  </div>`;
+  const on = (id, f) => { const e = $(id); if (e) e.onclick = f; };
+  on('#go', submit); on('#show', giveUp); on('#nx', next); on('#rego', retype); on('#quit', home);
+  const field = $('#ans') || $('#re');
+  if (field) { field.focus(); field.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); (ph === 'ask' ? submit : retype)(); } }); }
+}
+function submit() {
+  const v = $('#ans').value, it = R.cur;
+  const r = judge(it.q, v, isEasy());
+  if (r.st === 'fmt') { R.msg = r.msg; render(); return; }
+  R.last = v.trim();
+  if (r.st === 'ok') {
+    result(it, true); R.phase = 'ok'; render();
+    R.timer = setTimeout(next, 650);        // せいかいなら、すぐ つぎへ
+  } else { result(it, false); R.phase = 'ng'; R.msg = ''; render(); }
+}
+function giveUp() { R.last = ''; result(R.cur, false); R.phase = 'ng'; R.msg = ''; render(); }
+function retype() {
+  const q = R.cur.q, v = $('#re').value;
+  const same = normText(v, false) === normText(canonical(q), false) || judge(q.kind === 'frac' ? { ...q, form: 'any' } : q, v, false).st === 'ok';
+  if (!same) { R.msg = '答えと同じになるように、もう一度。'; render(); return; }
+  R.last = v.trim(); R.msg = ''; R.phase = 'fixed'; render();
+}
+// Enter で「つぎへ」（せいかい表示の間も、おして先に進める）
+document.addEventListener('keydown', e => {
+  if (!R || e.defaultPrevented || e.isComposing || e.key !== 'Enter') return;
+  if (R.phase === 'ok' || R.phase === 'fixed') { e.preventDefault(); next(); }
+});
+
+/* ---------- せんせい用（きろく・設定） ---------- */
+const pct = o => Math.round(o.ok / (o.ok + o.ng) * 100);
+function statsTable() {
+  const rows = [];
+  MATH_UNITS.forEach(u => rows.push(['算数', u, stats.unit['算数' + u]]));
+  SOCIAL_UNITS.forEach(u => rows.push(['社会', u, stats.unit['社会' + u]]));
+  if (!rows.some(r => r[2])) return '<div class="small">まだ きろくが ありません。</div>';
+  return `<table><tr><th>教科</th><th>単元</th><th>正答率（初めて出た問題）</th><th>回数</th></tr>${rows.map(r => {
+    const o = r[2]; if (!o) return `<tr><td>${r[0]}</td><td>${esc(r[1])}</td><td class="small">まだ</td><td></td></tr>`;
+    const t = o.ok + o.ng, p = pct(o);
+    return `<tr><td>${r[0]}</td><td>${esc(r[1])}</td><td><span class="meter"><i style="width:${p}%"></i></span>${p}%</td><td>${t}問</td></tr>`;
+  }).join('')}</table>`;
+}
+function teacher() {
+  const hard = SOCIAL.map(q => ({ q, o: stats.q[q.key] })).filter(x => x.o && x.o.ng > 0)
+    .sort((a, b) => (pct(a.o) - pct(b.o)) || (b.o.ng - a.o.ng)).slice(0, 30);
+  const pend = Object.keys(stats.pend).length;
+  app.innerHTML = `
+  <h1>せんせい用</h1>
+  <div class="card"><h2>設定</h2>
+    <div class="row"><span>社会の判定</span>
+      <div class="seg" role="group" aria-label="判定">
+        <button data-easy="0" class="${!isEasy() ? 'on' : ''}">きびしい（漢字のみ）</button>
+        <button data-easy="1" class="${isEasy() ? 'on' : ''}">ふつう（ひらがなもOK）</button>
+      </div></div>
+    <div class="row" style="margin-top:10px"><label class="small" for="nm">名前（CSVに入ります）</label>
+      <input id="nm" value="${esc(getName())}" maxlength="20" style="font-size:1rem;padding:6px 10px;border:1px solid var(--line);border-radius:8px;width:160px" autocomplete="off"></div>
+  </div>
+  <div class="card"><h2>単元ごとの正答率</h2>${statsTable()}</div>
+  <div class="card"><h2>社会：まちがえやすい問題（上位30）</h2>
+    ${hard.length ? `<table><tr><th>問題</th><th>答え</th><th>正答率</th><th>まちがい</th></tr>${hard.map(x => `<tr><td>${esc(x.q.text)}</td><td>${esc(x.q.ans[0])}</td><td>${pct(x.o)}%</td><td>${x.o.ng}回</td></tr>`).join('')}</table>` : '<div class="small">まだ、まちがえた問題はありません。</div>'}
+    <div class="small" style="margin-top:8px">まちがい直し待ち：${pend}問</div>
+  </div>
+  <div class="row"><button class="ghost" id="back">もどる</button><button class="ghost" id="csv">きろくをCSVで保存</button><button class="ghost" id="reset">きろくを消す</button></div>
+  <div class="small" style="margin-top:8px">きろくは、この端末のブラウザの中だけに保存されます（外には送りません）。</div>`;
+  app.querySelectorAll('[data-easy]').forEach(b => b.onclick = () => { lsSet('kgk_easy', b.dataset.easy); teacher(); });
+  $('#nm').onchange = e => setName(e.target.value);
+  $('#back').onclick = home; $('#csv').onclick = downloadCsv;
+  $('#reset').onclick = () => { if (confirm('きろくを全部消します（まちがい直しの待ちも消えます）。いいですか？')) { stats = { unit: {}, q: {}, g: {}, pend: {} }; saveStats(); teacher(); } };
+}
+function downloadCsv() {
+  const q = s => '"' + String(s).replace(/"/g, '""') + '"';
+  const nm = getName(), d = new Date().toLocaleDateString('ja-JP');
+  const lines = [['名前', '保存日', '種別', '教科', '単元', '問題', '正答', '初回正解', '初回不正解', '正答率(%)'].map(q).join(',')];
+  MATH_UNITS.forEach(u => { const o = stats.unit['算数' + u]; if (o) lines.push([nm, d, '単元', '算数', u, '', '', o.ok, o.ng, pct(o)].map(q).join(',')); });
+  SOCIAL_UNITS.forEach(u => { const o = stats.unit['社会' + u]; if (o) lines.push([nm, d, '単元', '社会', u, '', '', o.ok, o.ng, pct(o)].map(q).join(',')); });
+  SOCIAL.forEach(x => { const o = stats.q[x.key]; if (o) lines.push([nm, d, '問題', '社会', x.unit, x.text, x.ans[0], o.ok, o.ng, pct(o)].map(q).join(',')); });
+  if (lines.length === 1) { alert('まだ きろくがありません。'); return; }
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `県学診れんしゅう_きろく_${nm || 'noname'}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// 開発用：全問題の自己点検（ブラウザのコンソールで selfTest() と打つ。[] なら問題なし）
+window.selfTest = function () {
+  const bad = [];
+  MATH_UNITS.forEach(u => MATH[u].forEach((g, i) => { for (let k = 0; k < 300; k++) {
+    const q = g();
+    const probe = q.kind === 'frac' ? q.show.replace(/（.*$/, '') : q.ans;
+    if (judge(q, probe, false).st !== 'ok') bad.push([u, i, q.html, probe]);
+    if (q.kind === 'frac' && q.form === 'any' && q.show.includes('（')) { const m = q.show.match(/（(.*)）/)[1]; if (judge(q, m, false).st !== 'ok') bad.push([u, i, 'mixed', m]); }
+  } }));
+  SOCIAL.forEach(q => {
+    q.ans.forEach(a => { if (judge({ kind: q.isNum ? 'num' : 'text', ans: q.isNum ? a : q.ans, alt: q.alt }, a, false).st !== 'ok') bad.push([q.text, a]); });
+    q.alt.forEach(a => { if (judge({ kind: 'text', ans: q.ans, alt: q.alt }, a, true).st !== 'ok') bad.push([q.text, a, 'alt']); });
+  });
+  return bad;
+};
+home();
+</script>
+</body>
+</html>

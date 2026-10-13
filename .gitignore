@@ -1,0 +1,8 @@
+# 安全策：下に書いたもの以外は、すべて Git に入らない（県が配布した資料の混入防止）
+*
+!.gitignore
+!README.md
+!index.html
+!data/
+!data/math.js
+!data/social.js
