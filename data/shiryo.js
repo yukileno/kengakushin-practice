@@ -499,6 +499,8 @@ const SHIRYO = (() => {
     }
   ];
 
+  window.SHIRYO_PARTS = { table, para, bar, line, shiryo, NOTE };   // 「じっくり」（data/jikkuri.js）でも使う
+
   return RAW.map(r => ({
     unit: r.subj, text: r.q, kind: 'choice', ans: [r.right], alt: [], hint: r.hint || '資料を ぜんぶ 見て、えらんで おしてね。', choices: [r.right].concat(r.wrong), explain: r.explain, key: 'r:' + r.id,
     figFirst: true,

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>県学診 れんしゅう（算数・社会・国語・しりょう）</title>
+<title>県学診 れんしゅう（算数・社会・国語・しりょう・じっくり）</title>
 <style>
 :root{
   --bg:#f4f7fb; --card:#ffffff; --ink:#1d2733; --sub:#5b6b7c; --line:#d5dee8;
@@ -85,6 +85,38 @@ table.t th,table.t td{border:1px solid var(--line);padding:4px 8px;text-align:ce
 table.t th{background:#eef1f5;font-weight:600}
 .legend{display:flex;gap:14px;font-size:.85rem;flex-wrap:wrap;margin-top:2px}
 .legend i{display:inline-block;width:24px;height:0;border-top:3px solid;vertical-align:middle;margin-right:4px}
+.bigbtn.jk{background:#0f766e;box-shadow:0 4px 0 #0b524c}
+.jk-steps{display:flex;gap:6px;margin:6px 0 12px}
+.jk-steps div{flex:1;text-align:center;font-size:.85rem;padding:6px 2px;border-radius:8px;background:#e4ebf3;color:var(--sub)}
+.jk-steps div.on{background:var(--main);color:#fff;font-weight:700}
+.jk-steps div.done{background:var(--okbg);color:var(--ok)}
+.jk-instr{font-weight:700;margin:2px 0 10px}
+.jk-line{display:flex;gap:8px;align-items:flex-start;width:100%;text-align:left;border:2px solid var(--line);background:#fff;border-radius:12px;padding:8px 10px;margin-bottom:8px;font:inherit;color:var(--ink);cursor:pointer}
+.jk-av{font-size:1.3rem;line-height:1.4}
+.jk-tx{flex:1}
+.jk-who{font-size:.8rem;color:var(--sub)}
+.jk-line.mk{background:#fff176;border-color:#e0c200}
+.jk-line.good,.jk-chip.good{background:var(--okbg);border-color:var(--ok)}
+.jk-line.bad,.jk-chip.bad{background:var(--ngbg);border-color:var(--ng)}
+.jk-line.miss,.jk-chip.miss{border-color:var(--warn);border-style:dashed}
+.jk-badge{display:inline-block;background:var(--ok);color:#fff;border-radius:999px;padding:0 8px;font-size:.75rem;margin-left:6px}
+.jk-chips{display:flex;flex-direction:column;gap:8px}
+.jk-chip{width:100%;text-align:left;border:2px solid var(--line);background:#fff;border-radius:12px;padding:8px 12px;font:inherit;color:var(--ink);cursor:pointer}
+.jk-chip.sel{background:#e8f0fc;border-color:var(--main)}
+.jk-why{display:block;font-size:.85rem;margin-top:2px}
+.jk-gh{font-weight:700;margin:10px 0 6px;font-size:.95rem}
+.jk-fb{margin-top:10px;padding:10px 12px;border-radius:10px;font-size:.95rem}
+.jk-fb.ok{background:var(--okbg);color:var(--ok)}
+.jk-fb.ng{background:var(--ngbg);color:var(--ng)}
+.jk-fb.warn{background:var(--warnbg);color:var(--warn)}
+.jk-sent{line-height:2.4;font-size:1.05rem}
+.jk-sent select{font:inherit;font-size:.95rem;max-width:100%;padding:4px 6px;border:2px solid var(--main);border-radius:8px;background:#fff;color:var(--ink);margin:2px 2px;vertical-align:middle}
+.jk-sent select.ok{border-color:var(--ok);background:var(--okbg)}
+.jk-sent select.ng{border-color:var(--ng);background:var(--ngbg)}
+.jk-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.jk-item{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;color:var(--ink);border:2px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;font:inherit;cursor:pointer}
+.jk-item:hover{border-color:var(--main)}
+.jk-sub{display:inline-block;background:#0f766e;color:#fff;border-radius:6px;padding:0 8px;font-size:.8rem;margin-right:8px}
 @media (max-width:520px){ .q{font-size:1.25rem} input.ans{font-size:1.3rem} }
 </style>
 </head>
@@ -95,6 +127,7 @@ table.t th{background:#eef1f5;font-weight:600}
 <script src="data/social.js"></script>
 <script src="data/kokugo.js"></script>
 <script src="data/shiryo.js"></script>
+<script src="data/jikkuri.js"></script>
 <script>
 'use strict';
 /* ---------- 判定 ---------- */
@@ -211,11 +244,12 @@ function home() {
       <button class="bigbtn soc" data-sub="社会"><span>社会</span>${ps ? `<small>まちがい直し ${ps}問</small>` : ''}</button>
       <button class="bigbtn kok" data-sub="国語"><span>国語</span>${pk ? `<small>まちがい直し ${pk}問</small>` : ''}</button>
       <button class="bigbtn shr" data-sub="しりょう"><span>しりょう</span><small>グラフや表を よんで こたえる</small>${pr ? `<small>まちがい直し ${pr}問</small>` : ''}</button>
+      <button class="bigbtn jk" data-sub="じっくり"><span>じっくり</span><small>3つの手じゅんで 文をつくる</small></button>
     </div>
     <p class="small">まちがえた問題は、あとで また 出るよ。</p>
     <div class="foot"><button class="ghost" id="teacher">せんせい用</button></div>
   </div>`;
-  app.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => begin(b.dataset.sub));
+  app.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => (b.dataset.sub === 'じっくり' ? jkList() : begin(b.dataset.sub)));
   $('#teacher').onclick = teacher;
 }
 
@@ -353,6 +387,7 @@ function statsTable() {
   SOCIAL_UNITS.forEach(u => rows.push(['社会', u, stats.unit['社会' + u]]));
   KOKUGO_UNITS.forEach(u => rows.push(['国語', u, stats.unit['国語' + u]]));
   SHIRYO_UNITS.forEach(u => rows.push(['しりょう', u, stats.unit['しりょう' + u]]));
+  SHIRYO_UNITS.forEach(u => rows.push(['じっくり', u, stats.unit['じっくり' + u]]));
   if (!rows.some(r => r[2])) return '<div class="small">まだ きろくが ありません。</div>';
   return `<table><tr><th>教科</th><th>単元</th><th>正答率（初めて出た問題）</th><th>回数</th></tr>${rows.map(r => {
     const o = r[2]; if (!o) return `<tr><td>${r[0]}</td><td>${esc(r[1])}</td><td class="small">まだ</td><td></td></tr>`;
@@ -361,7 +396,7 @@ function statsTable() {
   }).join('')}</table>`;
 }
 function teacher() {
-  const hard = SOCIAL.map(q => ({ q, s: '社会', o: stats.q[q.key] })).concat(KOKUGO.map(q => ({ q, s: '国語', o: stats.q[q.key] })), SHIRYO.map(q => ({ q, s: 'しりょう（' + q.unit + '）', o: stats.q[q.key] }))).filter(x => x.o && x.o.ng > 0)
+  const hard = SOCIAL.map(q => ({ q, s: '社会', o: stats.q[q.key] })).concat(KOKUGO.map(q => ({ q, s: '国語', o: stats.q[q.key] })), SHIRYO.map(q => ({ q, s: 'しりょう（' + q.unit + '）', o: stats.q[q.key] })), JIKKURI.map(q => ({ q, s: 'じっくり（' + q.unit + '）', o: stats.q[q.key] }))).filter(x => x.o && x.o.ng > 0)
     .sort((a, b) => (pct(a.o) - pct(b.o)) || (b.o.ng - a.o.ng)).slice(0, 30);
   const pend = Object.keys(stats.pend).length;
   app.innerHTML = `
@@ -395,6 +430,8 @@ function downloadCsv() {
   SOCIAL_UNITS.forEach(u => { const o = stats.unit['社会' + u]; if (o) lines.push([nm, d, '単元', '社会', u, '', '', o.ok, o.ng, pct(o)].map(q).join(',')); });
   KOKUGO_UNITS.forEach(u => { const o = stats.unit['国語' + u]; if (o) lines.push([nm, d, '単元', '国語', u, '', '', o.ok, o.ng, pct(o)].map(q).join(',')); });
   SHIRYO_UNITS.forEach(u => { const o = stats.unit['しりょう' + u]; if (o) lines.push([nm, d, '単元', 'しりょう', u, '', '', o.ok, o.ng, pct(o)].map(q).join(',')); });
+  SHIRYO_UNITS.forEach(u => { const o = stats.unit['じっくり' + u]; if (o) lines.push([nm, d, '単元', 'じっくり', u, '', '', o.ok, o.ng, pct(o)].map(q).join(',')); });
+  JIKKURI.forEach(x => { const o = stats.q[x.key]; if (o) lines.push([nm, d, '問題', 'じっくり', x.unit, x.text, '', o.ok, o.ng, pct(o)].map(q).join(',')); });
   SHIRYO.forEach(x => { const o = stats.q[x.key]; if (o) lines.push([nm, d, '問題', 'しりょう', x.unit, x.key, x.ans[0], o.ok, o.ng, pct(o)].map(q).join(',')); });
   SOCIAL.forEach(x => { const o = stats.q[x.key]; if (o) lines.push([nm, d, '問題', '社会', x.unit, x.text, x.ans[0], o.ok, o.ng, pct(o)].map(q).join(',')); });
   KOKUGO.forEach(x => { const o = stats.q[x.key]; if (o) lines.push([nm, d, '問題', '国語', x.unit, x.text, x.ans[0], o.ok, o.ng, pct(o)].map(q).join(',')); });
@@ -435,9 +472,137 @@ window.selfTest = function () {
     q.choices.filter(c => c !== q.ans[0]).forEach(c => { if (judge(Q, c, false).st !== 'ng') bad.push([q.key, c, 'wrong-is-ok']); });
     if (!q.fig) bad.push([q.key, '資料なし']);
   });
-  const keys = SOCIAL.concat(KOKUGO, SHIRYO).map(q => q.key); if (new Set(keys).size !== keys.length) bad.push(['問題文の重複あり']);
+  JIKKURI.forEach(p => {
+    const k = p.key;
+    if (p.s1.lines.filter(l => l[3]).length !== 3) bad.push([k, '大切なセリフは3つ']);
+    ['A', 'B'].forEach(g => {
+      if (!p.s2[g].some(c => c[1]) || !p.s2[g].some(c => !c[1])) bad.push([k, '資料' + g + 'に、必要なものといらないものの両方が要る']);
+      p.s2[g].forEach(c => { if (!c[1] && !c[2]) bad.push([k, 'いらない理由が空']); });
+    });
+    p.s3.parts.filter(x => x[0] === 's').forEach(x => { if (x[1].length < 3 || new Set(x[1]).size !== x[1].length) bad.push([k, '選択肢の不備']); });
+    if (!p.docs() || !p.s2.link || !p.s3.explain) bad.push([k, '資料・まとめ・解説のどれかが空']);
+  });
+  const keys = SOCIAL.concat(KOKUGO, SHIRYO, JIKKURI).map(q => q.key); if (new Set(keys).size !== keys.length) bad.push(['問題文の重複あり']);
   return bad;
 };
+
+/* ---------- じっくり（①条件をさがす → ②証拠を集める → ③文をつくる） ---------- */
+let JK = null;
+const JKDONE = new Set();   // この画面を開いている間に、記録した問題
+function jkList() {
+  if (R) { clearTimeout(R.timer); R = null; }
+  JK = null;
+  app.innerHTML = `<h1>じっくり</h1>
+    <p class="small" style="font-size:1rem;margin:0 0 12px">3つの手じゅんで、資料をつなげて 文をつくろう。<br>① 条件をさがす → ② 証拠を集める → ③ 文をつくる</p>
+    ${JIKKURI.map((p, i) => {
+      const o = stats.q[p.key];
+      const st = !o ? 'まだ' : o.ok > 0 ? '◎ 1回でできた' : o.ng > 0 ? '△ もう一度やってみよう' : 'まだ';
+      return `<button class="jk-item" data-i="${i}"><span><span class="jk-sub">${esc(p.unit)}</span>${esc(p.title)}</span><span class="small">${st}</span></button>`;
+    }).join('')}
+    <div class="foot" style="margin-top:20px"><button class="ghost" id="jkhome">もどる</button></div>`;
+  app.querySelectorAll('.jk-item').forEach(b => b.onclick = () => jkStart(+b.dataset.i));
+  $('#jkhome').onclick = home;
+}
+function jkStart(i) {
+  const p = JIKKURI[i];
+  JK = {
+    i, p, mistakes: 0, step: 1, mark: new Set(), fb1: null, ev: { A: new Set(), B: new Set() }, fb2: null, fill: {}, fb3: null,
+    order: { A: shuffle(p.s2.A.map((_, k) => k)), B: shuffle(p.s2.B.map((_, k) => k)) },
+    opts: p.s3.parts.map(x => x[0] === 's' ? shuffle(x[1].map((t, k) => [t, k === 0])) : null)
+  };
+  window.scrollTo(0, 0); jkRender();
+}
+function jkRender() {
+  const p = JK.p, st = JK;
+  const names = ['① 条件をさがす', '② 証拠を集める', '③ 文をつくる'];
+  const stepper = `<div class="jk-steps">${names.map((n, i) => `<div class="${st.step === i + 1 ? 'on' : st.step > i + 1 ? 'done' : ''}">${st.step > i + 1 ? '✓ ' : ''}${n}</div>`).join('')}</div>`;
+  const body = st.step === 1 ? jkStep1() : st.step === 2 ? jkStep2() : jkStep3();
+  app.innerHTML = `${stepper}<div class="card"><h2><span class="jk-sub">${esc(p.unit)}</span>${esc(p.title)}</h2><p class="small" style="margin:0 0 4px">${esc(p.sub)}</p>${p.docs()}</div><div class="card">${body}</div>
+    <div class="row"><button class="ghost" id="jkquit">おわる（一覧へ）</button></div>`;
+  jkBind();
+}
+function jkStep1() {
+  const p = JK.p, st = JK, fb = st.fb1;
+  const items = p.s1.lines.map((l, i) => {
+    let cls = 'jk-line';
+    if (fb) { const isT = !!l[3], mk = st.mark.has(i); cls += fb.ok ? (isT ? ' good' : '') : (mk && isT ? ' good' : mk && !isT ? ' bad' : (!mk && isT ? ' miss' : '')); }
+    else if (st.mark.has(i)) cls += ' mk';
+    const badge = fb && fb.ok && l[3] ? `<span class="jk-badge">${esc(l[3])}</span>` : '';
+    return `<button class="${cls}" data-l="${i}" ${fb && fb.ok ? 'disabled' : ''}><span class="jk-av">${l[1]}</span><span class="jk-tx"><span class="jk-who">${esc(l[0])}</span><br>${esc(l[2])}${badge}</span></button>`;
+  }).join('');
+  let msg = '';
+  if (fb) msg = fb.ok ? '<div class="jk-fb ok"><b>○ 条件が3つそろったね！</b> 使う資料、話す内容、書き方のルールを確かめてから、資料を読むと、まよわないよ。</div>'
+    : `<div class="jk-fb warn">${fb.extra ? '大切ではないセリフがまざっているよ（赤いところ）。' : ''}${fb.missing ? 'まだ見つけていない大切なセリフがあるよ（点線のところ）。' : ''}もう一度、えらびなおしてみよう。</div>`;
+  return `<div class="jk-instr">${esc(p.s1.instr)}</div>${items}${msg}
+    <div class="jk-row">${fb && fb.ok ? '<button class="primary" id="jknext">② 証拠を集めに行く →</button>' : `<button class="primary" id="jkchk1" ${st.mark.size ? '' : 'disabled'}>これでマーカーを引いた！</button>`}</div>
+    <p class="small">（大切なセリフは ${p.s1.lines.filter(l => l[3]).length} つ）</p>`;
+}
+function jkStep2() {
+  const p = JK.p, st = JK, fb = st.fb2;
+  const grp = g => `<div class="jk-gh">資料${g}から</div><div class="jk-chips">${st.order[g].map(i => {
+    const c = p.s2[g][i], ok = !!c[1], sel = st.ev[g].has(i);
+    let cls = 'jk-chip';
+    if (fb) cls += sel ? (ok ? ' good' : ' bad') : (ok && !fb.ok ? ' miss' : ''); else if (sel) cls += ' sel';
+    const why = fb && sel && !ok ? `<span class="jk-why">${esc(c[2])}</span>` : (fb && !sel && ok && !fb.ok ? '<span class="jk-why">これも、必要だよ。</span>' : '');
+    return `<button class="${cls}" data-g="${g}" data-i="${i}" ${fb && fb.ok ? 'disabled' : ''}>${sel ? '✔ ' : ''}${esc(c[0])}${why}</button>`;
+  }).join('')}</div>`;
+  let msg = '';
+  if (fb) msg = fb.ok ? `<div class="jk-fb ok"><b>○ 証拠がそろったよ！</b><br>${esc(p.s2.link)}</div>`
+    : `<div class="jk-fb warn">${fb.wrong ? '関係のうすいもの（赤）がまざっているよ。' : ''}${fb.missing ? '必要なもの（点線）が、まだ足りないよ。' : ''}選びなおしてみよう。</div>`;
+  const n = st.ev.A.size + st.ev.B.size;
+  return `<div class="jk-instr">${esc(p.s2.instr)}</div>${grp('A')}${grp('B')}${msg}
+    <div class="jk-row">${fb && fb.ok ? '<button class="primary" id="jknext">③ 文をつくりに行く →</button>' : `<button class="primary" id="jkchk2" ${n ? '' : 'disabled'}>これで証拠を集めた！</button>`}<button class="ghost" id="jkback">← もどる</button></div>`;
+}
+function jkStep3() {
+  const p = JK.p, st = JK, fb = st.fb3;
+  let si = 0;
+  const sent = p.s3.parts.map((x, k) => {
+    if (x[0] === 't') return esc(x[1]);
+    const id = 's' + (si++), v = st.fill[id];
+    const cls = fb ? (fb.res[id] ? 'ok' : 'ng') : '';
+    return `<select data-id="${id}" class="${cls}" ${fb && fb.allOk ? 'disabled' : ''}><option value="">▼ えらぶ</option>${st.opts[k].map(([t], j) => `<option value="${j}" ${v === String(j) ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>${fb ? (fb.res[id] ? '✅' : '❌') : ''}`;
+  }).join('');
+  let msg = '';
+  if (fb) msg = fb.allOk ? `<div class="jk-fb ok"><b>${st.mistakes === 0 ? '◎ 1回でできた！' : '○ 完成！'}</b><br>${esc(p.s3.explain)}</div>`
+    : `<div class="jk-fb ng">${fb.empty ? 'まだ、えらんでいないところがあるよ。' : '❌のところが、資料とちがうよ。②で集めた証拠を見て、もう一度えらぼう。'}</div>`;
+  const last = JK.i === JIKKURI.length - 1;
+  return `<div class="jk-instr">${esc(p.s3.lead)}</div><div class="jk-sent">${sent}</div>${msg}
+    <div class="jk-row">${fb && fb.allOk ? `<button class="primary" id="jknextp">${last ? '一覧にもどる' : 'つぎの問題へ →'}</button><button class="ghost" id="jkagain">もう一度やる</button>` : '<button class="primary" id="jkchk3">答えあわせ</button><button class="ghost" id="jkback">← もどる</button>'}</div>`;
+}
+function jkBind() {
+  const p = JK.p, st = JK;
+  const on = (id, f) => { const e = $(id); if (e) e.onclick = f; };
+  const miss = () => { st.mistakes++; };
+  document.querySelectorAll('.jk-line[data-l]').forEach(b => b.onclick = () => { const i = +b.dataset.l; st.fb1 = null; st.mark.has(i) ? st.mark.delete(i) : st.mark.add(i); jkRender(); });
+  on('#jkchk1', () => {
+    const t = new Set(p.s1.lines.map((l, i) => l[3] ? i : -1).filter(i => i >= 0));
+    const missing = [...t].some(i => !st.mark.has(i)), extra = [...st.mark].some(i => !t.has(i));
+    st.fb1 = { ok: !missing && !extra, missing, extra }; if (!st.fb1.ok) miss(); jkRender();
+  });
+  document.querySelectorAll('.jk-chip[data-g]').forEach(b => b.onclick = () => { const g = b.dataset.g, i = +b.dataset.i; st.fb2 = null; st.ev[g].has(i) ? st.ev[g].delete(i) : st.ev[g].add(i); jkRender(); });
+  on('#jkchk2', () => {
+    let wrong = false, missing = false;
+    ['A', 'B'].forEach(g => p.s2[g].forEach((c, i) => { const sel = st.ev[g].has(i); if (sel && !c[1]) wrong = true; if (!sel && c[1]) missing = true; }));
+    st.fb2 = { ok: !wrong && !missing, wrong, missing }; if (!st.fb2.ok) miss(); jkRender();
+  });
+  document.querySelectorAll('.jk-sent select').forEach(sel => sel.onchange = () => { st.fill[sel.dataset.id] = sel.value; st.fb3 = null; jkRender(); });
+  on('#jkchk3', () => {
+    const res = {}; let empty = false, allOk = true, si = 0;
+    p.s3.parts.forEach((x, k) => { if (x[0] !== 's') return; const id = 's' + (si++), v = st.fill[id]; if (v === undefined || v === '') { empty = true; allOk = false; res[id] = false; } else { const ok = st.opts[k][+v][1]; res[id] = ok; if (!ok) allOk = false; } });
+    st.fb3 = { res, empty, allOk };
+    if (!allOk && !empty) miss();
+    if (allOk && !JKDONE.has(p.key)) {   // はじめて完成したときだけ、記録する（1回でできたら ○、まちがいがあれば ×）
+      JKDONE.add(p.key); const ok = st.mistakes === 0;
+      bump(stats.unit, 'じっくり' + p.unit, ok); bump(stats.q, p.key, ok); saveStats();
+    }
+    jkRender();
+  });
+  on('#jknext', () => { st.step++; window.scrollTo(0, 0); jkRender(); });
+  on('#jkback', () => { st.step--; jkRender(); });
+  on('#jknextp', () => { if (st.i === JIKKURI.length - 1) jkList(); else jkStart(st.i + 1); });
+  on('#jkagain', () => jkStart(st.i));
+  on('#jkquit', jkList);
+}
 home();
 </script>
 </body>
