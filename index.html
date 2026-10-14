@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>県学診 れんしゅう（算数・社会）</title>
+<title>県学診 れんしゅう（算数・社会・国語）</title>
 <style>
 :root{
   --bg:#f4f7fb; --card:#ffffff; --ink:#1d2733; --sub:#5b6b7c; --line:#d5dee8;
@@ -39,7 +39,12 @@ button.ghost{background:#fff;color:var(--sub);border:1px solid var(--line);borde
 .bigbtn span{font-size:2.4rem;font-weight:700}
 .bigbtn small{font-size:.85rem;opacity:.9}
 .bigbtn.soc{background:#2a8a5a;box-shadow:0 4px 0 #1c6a42}
+.bigbtn.kok{background:#b4532a;box-shadow:0 4px 0 #8a3d1c}
 .bigbtn:active{transform:translateY(3px);box-shadow:none}
+.choices{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+button.choice{text-align:left;background:#fff;color:var(--ink);border:2px solid var(--main);border-radius:12px;padding:12px 16px;font-size:1.2rem;line-height:1.5;cursor:pointer;font-family:inherit}
+button.choice:hover{background:#e8f0fc}
+button.choice:active{background:#d6e4fa}
 .tag{background:var(--warnbg);color:var(--warn);border-radius:6px;padding:1px 8px;font-size:.8rem;margin-left:6px}
 .foot{margin-top:40px}
 
@@ -73,6 +78,7 @@ ul.miss li{margin-bottom:8px}
 
 <script src="data/math.js"></script>
 <script src="data/social.js"></script>
+<script src="data/kokugo.js"></script>
 <script>
 'use strict';
 /* ---------- 判定 ---------- */
@@ -100,6 +106,7 @@ function parseFrac(raw) {
 function judge(q, raw, easy) {
   const input = String(raw).trim();
   if (!input) return { st: 'fmt', msg: '答えを入力してね。' };
+  if (q.kind === 'choice') return { st: q.ans.includes(input) ? 'ok' : 'ng' };
   if (q.kind === 'num') {
     const a = parseDec(input);
     if (!a) return { st: 'fmt', msg: '数字だけで入力してね（単位は書かなくていいよ）。' };
@@ -126,12 +133,12 @@ function judge(q, raw, easy) {
   return { st: list.some(v => normText(v, easy) === x) ? 'ok' : 'ng' };
 }
 function showAnswer(q) {
-  if (q.kind === 'text') return q.ans[0];
+  if (q.kind === 'text' || q.kind === 'choice') return q.ans[0];
   if (q.kind === 'frac') return q.show;
   return q.ans + (q.unit ? ' ' + q.unit : '');
 }
 function canonical(q) { // うちなおし用の正解（きびしく判定）
-  if (q.kind === 'text') return q.ans[0];
+  if (q.kind === 'text' || q.kind === 'choice') return q.ans[0];
   if (q.kind === 'frac') return q.show.replace(/（.*$/, '');
   return q.ans;
 }
@@ -155,10 +162,10 @@ const isEasy = () => lsGet('kgk_easy', '0') === '1';   // 先生用メニュー�
 const MATH_GENS = [];
 MATH_UNITS.forEach(u => MATH[u].forEach((g, i) => MATH_GENS.push({ id: u + ':' + i, unit: u, gen: g })));
 const MG = Object.fromEntries(MATH_GENS.map(x => [x.id, x]));
-const SQ = Object.fromEntries(SOCIAL.map(q => [q.key, q]));
-function socialQ(q) {
-  const Q = { kind: q.isNum ? 'num' : 'text', html: esc(q.text), ans: q.isNum ? q.ans[0] : q.ans, alt: q.alt, unit: '', explain: '', key: q.key, isNum: q.isNum };
-  return Q;
+const SQ = Object.fromEntries(SOCIAL.concat(KOKUGO).map(q => [q.key, q]));
+function wordQ(q) {   // 社会・国語（一問一答・選択式）
+  if (q.kind === 'choice') return { kind: 'choice', html: esc(q.text), ans: q.ans, alt: [], choices: shuffle(q.choices), unit: '', explain: esc(q.explain), key: q.key };
+  return { kind: q.isNum ? 'num' : 'text', html: esc(q.text), ans: q.isNum ? q.ans[0] : q.ans, alt: q.alt, unit: '', explain: '', key: q.key, isNum: q.isNum, hint: q.hint || '' };
 }
 function weightedPick(items, wf, n) {
   const pool = items.slice(), out = [];
@@ -178,7 +185,7 @@ let R = null;   // いまの練習の状態
 function home() {
   if (R) { clearTimeout(R.timer); R = null; }
   const pend = Object.values(stats.pend);
-  const pm = pend.filter(p => p.sub === '算数').length, ps = pend.filter(p => p.sub === '社会').length;
+  const pm = pend.filter(p => p.sub === '算数').length, ps = pend.filter(p => p.sub === '社会').length, pk = pend.filter(p => p.sub === '国語').length;
   app.innerHTML = `
   <div class="homewrap">
     <h1>県学診 れんしゅう</h1>
@@ -186,6 +193,7 @@ function home() {
     <div class="bigbtns">
       <button class="bigbtn" data-sub="算数"><span>算数</span>${pm ? `<small>まちがい直し ${pm}問</small>` : ''}</button>
       <button class="bigbtn soc" data-sub="社会"><span>社会</span>${ps ? `<small>まちがい直し ${ps}問</small>` : ''}</button>
+      <button class="bigbtn kok" data-sub="国語"><span>国語</span>${pk ? `<small>まちがい直し ${pk}問</small>` : ''}</button>
     </div>
     <p class="small">まちがえた問題は、あとで また 出るよ。</p>
     <div class="foot"><button class="ghost" id="teacher">せんせい用</button></div>
@@ -207,7 +215,7 @@ function makeItem(s) {
     return { t: 'm', id: s.id, unit: m.unit, level: s.level, retry: true, q: Object.assign({ unit: m.unit }, m.gen()) };
   }
   const q = SQ[s.id]; if (!q) return null;
-  return { t: 's', id: s.id, unit: q.unit, level: s.level, retry: true, q: socialQ(q) };
+  return { t: 's', id: s.id, unit: q.unit, level: s.level, retry: true, q: wordQ(q) };
 }
 function makeFresh() {
   if (R.subject === '算数') {
@@ -216,10 +224,11 @@ function makeFresh() {
     R.recent.push(x.id); if (R.recent.length > 4) R.recent.shift();
     return { t: 'm', id: 'm|' + x.id, unit: x.unit, level: 0, retry: false, q: Object.assign({ unit: x.unit }, x.gen()) };
   }
-  const cand = SOCIAL.filter(q => !R.recent.includes(q.key) && !R.sched.some(s => s.id === q.key));
-  const q = weightedPick(cand.length ? cand : SOCIAL, q => wOf(stats.q[q.key]), 1)[0];
+  const pool = R.subject === '国語' ? KOKUGO : SOCIAL;
+  const cand = pool.filter(q => !R.recent.includes(q.key) && !R.sched.some(s => s.id === q.key));
+  const q = weightedPick(cand.length ? cand : pool, q => wOf(stats.q[q.key]), 1)[0];
   R.recent.push(q.key); if (R.recent.length > 25) R.recent.shift();
-  return { t: 's', id: q.key, unit: q.unit, level: 0, retry: false, q: socialQ(q) };
+  return { t: 's', id: q.key, unit: q.unit, level: 0, retry: false, q: wordQ(q) };
 }
 function next() {
   clearTimeout(R.timer);
@@ -227,7 +236,7 @@ function next() {
   const di = R.sched.findIndex(s => s.due <= R.n);
   if (di >= 0) it = makeItem(R.sched.splice(di, 1)[0]);
   if (!it) it = makeFresh();
-  R.n++; R.cur = it; R.phase = 'ask'; R.msg = ''; R.last = '';
+  R.n++; R.cur = it; R.phase = 'ask'; R.msg = ''; R.last = ''; R.wp = false;
   render();
 }
 function schedule(it, level, gap) {
@@ -249,22 +258,27 @@ function result(it, ok) {
   saveStats();
 }
 
-const HINT = q => q.kind === 'frac' ? '分数は 3/4、帯分数は 1と3/4 のように入力。' : q.kind === 'num' ? '数字を入力（全角・半角どちらでもOK）。' : (isEasy() ? 'ひらがなでもOK。' : '漢字で書けるものは漢字で。');
+const HINT = q => q.kind === 'choice' ? '正しいものを えらんで おしてね。' : q.hint ? q.hint : q.kind === 'frac' ?'分数は 3/4、帯分数は 1と3/4 のように入力。' : q.kind === 'num' ? '数字を入力（全角・半角どちらでもOK）。' : (isEasy() ? 'ひらがなでもOK。' : '漢字で書けるものは漢字で。');
 function render() {
   const it = R.cur, q = it.q, ph = R.phase;
   const tag = it.retry ? '<span class="tag">まちがい直し</span>' : '';
   let body = '';
-  if (ph === 'ask') {
+  if (ph === 'ask' && q.kind === 'choice') {
+    body = `<div class="choices">${q.choices.map((c, i) => `<button class="choice" data-c="${i}">${esc(c)}</button>`).join('')}</div>
+      <div class="hint">${HINT(q)}</div>
+      <div style="margin-top:14px"><button class="ghost" id="show">わからない（答えを見る）</button></div>`;
+  } else if (ph === 'ask') {
     body = `<div class="inrow"><input class="ans" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="答え"> <span class="unit">${esc(q.unit)}</span> <button class="primary" id="go">こたえる</button></div>
       <div class="hint">${HINT(q)}</div>${R.msg ? `<div class="fb fmt">${esc(R.msg)}</div>` : ''}
       <div style="margin-top:14px"><button class="ghost" id="show">わからない（答えを見る）</button></div>`;
   } else if (ph === 'ok') {
     body = `<div class="inrow"><input class="ans" disabled value="${esc(R.last)}"> <span class="unit">${esc(q.unit)}</span></div>
       <div class="fb ok"><b>○ せいかい！</b></div>`;
+    if (q.kind === 'choice') body = `<div class="fb ok"><b>○ せいかい！</b><div class="ansline">${esc(R.last)}</div></div>`;
   } else {
     const fixed = ph === 'fixed';
-    body = `<div class="inrow"><input class="ans" disabled value="${esc(R.last)}"> <span class="unit">${esc(q.unit)}</span></div>
-      <div class="fb ng"><b>${fixed ? '答え：' : '× ざんねん。答えは…'}</b><div class="ansline">${esc(showAnswer(q))}</div>${q.explain ? `<div class="exp">${q.explain}</div>` : ''}
+    body = `${q.kind === 'choice' ? (R.last ? `<div class="small" style="margin-bottom:6px">きみの 答え：${esc(R.last)}</div>` : '') : `<div class="inrow"><input class="ans" disabled value="${esc(R.last)}"> <span class="unit">${esc(q.unit)}</span></div>`}
+      <div class="fb ng"><b>${fixed && !R.wp ? '答え：' : '× ざんねん。答えは…'}</b><div class="ansline">${esc(showAnswer(q))}</div>${q.explain ? `<div class="exp">${q.explain}</div>` : ''}
       ${fixed ? '<div class="small" style="margin-top:6px">あとで また 出るよ。</div>' : `<div style="margin-top:10px;color:var(--ink)">答えを見ながら、もう一度 入力しよう。</div>
       <div class="inrow" style="margin-top:8px"><input class="ans" id="re" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="打ち直し"> <span class="unit">${esc(q.unit)}</span> <button class="primary" id="rego">うちなおし</button></div>
       ${R.msg ? `<div class="hint" style="color:var(--warn)">${esc(R.msg)}</div>` : ''}`}</div>
@@ -280,6 +294,7 @@ function render() {
   </div>`;
   const on = (id, f) => { const e = $(id); if (e) e.onclick = f; };
   on('#go', submit); on('#show', giveUp); on('#nx', next); on('#rego', retype); on('#quit', home);
+  app.querySelectorAll('button.choice').forEach(b => b.onclick = () => chooseAns(q.choices[+b.dataset.c]));
   const field = $('#ans') || $('#re');
   if (field) { field.focus(); field.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); (ph === 'ask' ? submit : retype)(); } }); }
 }
@@ -293,7 +308,13 @@ function submit() {
     R.timer = setTimeout(next, 650);        // せいかいなら、すぐ つぎへ
   } else { result(it, false); R.phase = 'ng'; R.msg = ''; render(); }
 }
-function giveUp() { R.last = ''; result(R.cur, false); R.phase = 'ng'; R.msg = ''; render(); }
+function giveUp() { R.last = ''; result(R.cur, false); R.phase = R.cur.q.kind === 'choice' ? 'fixed' : 'ng'; R.msg = ''; render(); }
+function chooseAns(v) {   // 選択式：えらんだ答えを判定（まちがえたら、答えを見せて つぎへ）
+  const it = R.cur, r = judge(it.q, v, false);
+  R.last = v; R.msg = '';
+  if (r.st === 'ok') { result(it, true); R.phase = 'ok'; render(); R.timer = setTimeout(next, 650); }
+  else { result(it, false); R.phase = 'fixed'; R.wp = true; render(); }
+}
 function retype() {
   const q = R.cur.q, v = $('#re').value;
   const same = normText(v, false) === normText(canonical(q), false) || judge(q.kind === 'frac' ? { ...q, form: 'any' } : q, v, false).st === 'ok';
@@ -312,6 +333,7 @@ function statsTable() {
   const rows = [];
   MATH_UNITS.forEach(u => rows.push(['算数', u, stats.unit['算数' + u]]));
   SOCIAL_UNITS.forEach(u => rows.push(['社会', u, stats.unit['社会' + u]]));
+  KOKUGO_UNITS.forEach(u => rows.push(['国語', u, stats.unit['国語' + u]]));
   if (!rows.some(r => r[2])) return '<div class="small">まだ きろくが ありません。</div>';
   return `<table><tr><th>教科</th><th>単元</th><th>正答率（初めて出た問題）</th><th>回数</th></tr>${rows.map(r => {
     const o = r[2]; if (!o) return `<tr><td>${r[0]}</td><td>${esc(r[1])}</td><td class="small">まだ</td><td></td></tr>`;
@@ -320,13 +342,13 @@ function statsTable() {
   }).join('')}</table>`;
 }
 function teacher() {
-  const hard = SOCIAL.map(q => ({ q, o: stats.q[q.key] })).filter(x => x.o && x.o.ng > 0)
+  const hard = SOCIAL.map(q => ({ q, s: '社会', o: stats.q[q.key] })).concat(KOKUGO.map(q => ({ q, s: '国語', o: stats.q[q.key] }))).filter(x => x.o && x.o.ng > 0)
     .sort((a, b) => (pct(a.o) - pct(b.o)) || (b.o.ng - a.o.ng)).slice(0, 30);
   const pend = Object.keys(stats.pend).length;
   app.innerHTML = `
   <h1>せんせい用</h1>
   <div class="card"><h2>設定</h2>
-    <div class="row"><span>社会の判定</span>
+    <div class="row"><span>社会・国語（入力式）の判定</span>
       <div class="seg" role="group" aria-label="判定">
         <button data-easy="0" class="${!isEasy() ? 'on' : ''}">きびしい（漢字のみ）</button>
         <button data-easy="1" class="${isEasy() ? 'on' : ''}">ふつう（ひらがなもOK）</button>
@@ -335,8 +357,8 @@ function teacher() {
       <input id="nm" value="${esc(getName())}" maxlength="20" style="font-size:1rem;padding:6px 10px;border:1px solid var(--line);border-radius:8px;width:160px" autocomplete="off"></div>
   </div>
   <div class="card"><h2>単元ごとの正答率</h2>${statsTable()}</div>
-  <div class="card"><h2>社会：まちがえやすい問題（上位30）</h2>
-    ${hard.length ? `<table><tr><th>問題</th><th>答え</th><th>正答率</th><th>まちがい</th></tr>${hard.map(x => `<tr><td>${esc(x.q.text)}</td><td>${esc(x.q.ans[0])}</td><td>${pct(x.o)}%</td><td>${x.o.ng}回</td></tr>`).join('')}</table>` : '<div class="small">まだ、まちがえた問題はありません。</div>'}
+  <div class="card"><h2>社会・国語：まちがえやすい問題（上位30）</h2>
+    ${hard.length ? `<table><tr><th>教科</th><th>問題</th><th>答え</th><th>正答率</th><th>まちがい</th></tr>${hard.map(x => `<tr><td>${x.s}</td><td>${esc(x.q.text)}</td><td>${esc(x.q.ans[0])}</td><td>${pct(x.o)}%</td><td>${x.o.ng}回</td></tr>`).join('')}</table>` : '<div class="small">まだ、まちがえた問題はありません。</div>'}
     <div class="small" style="margin-top:8px">まちがい直し待ち：${pend}問</div>
   </div>
   <div class="row"><button class="ghost" id="back">もどる</button><button class="ghost" id="csv">きろくをCSVで保存</button><button class="ghost" id="reset">きろくを消す</button></div>
@@ -352,7 +374,9 @@ function downloadCsv() {
   const lines = [['名前', '保存日', '種別', '教科', '単元', '問題', '正答', '初回正解', '初回不正解', '正答率(%)'].map(q).join(',')];
   MATH_UNITS.forEach(u => { const o = stats.unit['算数' + u]; if (o) lines.push([nm, d, '単元', '算数', u, '', '', o.ok, o.ng, pct(o)].map(q).join(',')); });
   SOCIAL_UNITS.forEach(u => { const o = stats.unit['社会' + u]; if (o) lines.push([nm, d, '単元', '社会', u, '', '', o.ok, o.ng, pct(o)].map(q).join(',')); });
+  KOKUGO_UNITS.forEach(u => { const o = stats.unit['国語' + u]; if (o) lines.push([nm, d, '単元', '国語', u, '', '', o.ok, o.ng, pct(o)].map(q).join(',')); });
   SOCIAL.forEach(x => { const o = stats.q[x.key]; if (o) lines.push([nm, d, '問題', '社会', x.unit, x.text, x.ans[0], o.ok, o.ng, pct(o)].map(q).join(',')); });
+  KOKUGO.forEach(x => { const o = stats.q[x.key]; if (o) lines.push([nm, d, '問題', '国語', x.unit, x.text, x.ans[0], o.ok, o.ng, pct(o)].map(q).join(',')); });
   if (lines.length === 1) { alert('まだ きろくがありません。'); return; }
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
@@ -373,6 +397,16 @@ window.selfTest = function () {
     q.ans.forEach(a => { if (judge({ kind: q.isNum ? 'num' : 'text', ans: q.isNum ? a : q.ans, alt: q.alt }, a, false).st !== 'ok') bad.push([q.text, a]); });
     q.alt.forEach(a => { if (judge({ kind: 'text', ans: q.ans, alt: q.alt }, a, true).st !== 'ok') bad.push([q.text, a, 'alt']); });
   });
+  KOKUGO.forEach(q => {
+    const Q = wordQ(q);
+    q.ans.forEach(a => { if (judge(Q, a, false).st !== 'ok') bad.push([q.text, a]); });
+    if (q.kind === 'choice') {
+      if (new Set(q.choices).size !== q.choices.length) bad.push([q.text, '選択肢の重複']);
+      if (q.choices.length < 2) bad.push([q.text, '選択肢が足りない']);
+      q.choices.filter(c => !q.ans.includes(c)).forEach(c => { if (judge(Q, c, false).st !== 'ng') bad.push([q.text, c, 'wrong-is-ok']); });
+    } else q.alt.forEach(a => { if (judge({ kind: 'text', ans: q.ans, alt: q.alt }, a, true).st !== 'ok') bad.push([q.text, a, 'alt']); });
+  });
+  const keys = SOCIAL.concat(KOKUGO).map(q => q.key); if (new Set(keys).size !== keys.length) bad.push(['問題文の重複あり']);
   return bad;
 };
 home();
