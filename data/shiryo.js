@@ -29,7 +29,7 @@ const SHIRYO = (() => {
         `<text x="${x + bw * 0.3}" y="${T + ph - bh - 4}" font-size="12" text-anchor="middle">${v}</text>` +
         `<text x="${x + bw * 0.3}" y="${h - B + 16}" font-size="13" text-anchor="middle">${E(lb)}</text>`;
     });
-    g += `<text x="${L}" y="12" font-size="12">${E(unit)}</text>`;
+    g += `<text x="${L}" y="14" font-size="12">${E(unit)}</text>`;
     return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="棒グラフ">${g}</svg>`;
   }
 
@@ -47,7 +47,7 @@ const SHIRYO = (() => {
       g += `<polyline points="${s.vals.map((v, i) => `${X(i)},${Y(v)}`).join(' ')}" fill="none" stroke="${s.color}" stroke-width="3" ${s.dash ? `stroke-dasharray="${s.dash}"` : ''}/>`;
       s.vals.forEach((v, i) => { g += `<circle cx="${X(i)}" cy="${Y(v)}" r="3.5" fill="${s.color}"/>`; });
     });
-    g += `<text x="${L}" y="12" font-size="12">${E(unit)}</text>`;
+    g += `<text x="${L}" y="14" font-size="12">${E(unit)}</text>`;
     const legend = `<div class="legend">${series.map(s => `<span><i style="border-color:${s.color};${s.dash ? 'border-top-style:dashed' : ''}"></i>${E(s.name)}</span>`).join('')}</div>`;
     return `<svg viewBox="0 0 ${w} ${h}" role="img" aria-label="折れ線グラフ">${g}</svg>${legend}`;
   }
