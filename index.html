@@ -263,8 +263,8 @@ function canonical(q) { // うちなおし用の正解（きびしく判定）
 /* ---------- 記録（この端末のブラウザの中だけ） ---------- */
 const LS = 'kgk_stats_v1';
 function loadStats() {
-  try { const o = JSON.parse(localStorage.getItem(LS)) || {}; return { unit: o.unit || {}, q: o.q || {}, g: o.g || {}, pend: o.pend || {} }; }
-  catch (e) { return { unit: {}, q: {}, g: {}, pend: {} }; }
+  try { const o = JSON.parse(localStorage.getItem(LS)) || {}; return { unit: o.unit || {}, q: o.q || {}, g: o.g || {}, pend: o.pend || {}, rd: o.rd || {} }; }
+  catch (e) { return { unit: {}, q: {}, g: {}, pend: {}, rd: {} }; }
 }
 function saveStats() { try { localStorage.setItem(LS, JSON.stringify(stats)); } catch (e) { /* 保存できなくても動く */ } }
 let stats = loadStats();
@@ -295,6 +295,9 @@ function weightedPick(items, wf, n) {
   }
   return out;
 }
+// 「できた」の判定：初めて出たときの正解、または、まちがい直しの出題での正解
+const doneQ = q => ((stats.q[q.key] || {}).ok || 0) > 0 || (stats.rd[q.key] || 0) > 0;
+const mathCredit = x => Math.min(((stats.g[x.id] || {}).ok || 0) + (stats.rd['m|' + x.id] || 0), 3);
 const wOf = o => (o ? 0.6 + 3 * (o.ng + 0.5) / (o.ok + o.ng + 1) : 2.2);   // まちがえやすいものを出やすく
 
 /* ---------- 画面 ---------- */
@@ -346,13 +349,13 @@ function makeItem(s) {
 function makeFresh() {
   if (R.subject === '算数') {
     const cand = MATH_GENS.filter(x => !R.recent.includes(x.id) && !R.sched.some(s => s.id === 'm|' + x.id));
-    const x = weightedPick(cand.length ? cand : MATH_GENS, x => wOf(stats.g[x.id]), 1)[0];
+    const x = weightedPick(cand.length ? cand : MATH_GENS, x => wOf(stats.g[x.id]) * (mathCredit(x) >= 3 ? 0.15 : 1), 1)[0];   // できたパターンは、出にくくする
     R.recent.push(x.id); if (R.recent.length > 4) R.recent.shift();
     return { t: 'm', id: 'm|' + x.id, unit: x.unit, level: 0, retry: false, q: Object.assign({ unit: x.unit }, x.gen()) };
   }
   const pool = R.subject === 'しりょう' ? SHIRYO : R.subject === '国語' ? KOKUGO : SOCIAL;
   const cand = pool.filter(q => !R.recent.includes(q.key) && !R.sched.some(s => s.id === q.key));
-  const q = weightedPick(cand.length ? cand : pool, q => wOf(stats.q[q.key]), 1)[0];
+  const q = weightedPick(cand.length ? cand : pool, q => wOf(stats.q[q.key]) * (doneQ(q) ? 0.15 : 1), 1)[0];   // できた問題は、出にくくして、まだの問題を出す
   R.recent.push(q.key); if (R.recent.length > Math.min(25, pool.length - 1)) R.recent.shift();
   return { t: 's', id: q.key, unit: q.unit, level: 0, retry: false, q: wordQ(q) };
 }
@@ -374,6 +377,7 @@ function result(it, ok) {
     bump(stats.unit, R.subject + it.unit, ok);
     if (it.t === 's') bump(stats.q, it.id, ok); else bump(stats.g, it.id.slice(2), ok);
   }
+  if (it.retry && ok) stats.rd[it.id] = (stats.rd[it.id] || 0) + 1;   // まちがい直しの出題で正解したら、達成にかぞえる
   if (ok) {
     R.right++; R.streak++;
     if (it.level === 1) schedule(it, 2, 10);        // 1回なおせた → もう一度だけ、少しあとで
@@ -389,9 +393,10 @@ function result(it, ok) {
 const POOLS = () => ({ '算数': null, '社会': SOCIAL, '国語': KOKUGO, 'しりょう': SHIRYO, 'じっくり': JIKKURI });
 const MATH_GOAL = 3;   // 算数は、問題のパターンごとに 3回 正解したら「できた」とする
 function achieveRate(subject) {   // 国語・社会・しりょう：1回でも正解した問題の割合 ／ 算数：パターンごとの正解数（最大3回）の合計の割合
-  if (subject === '算数') return MATH_GENS.reduce((a, x) => a + Math.min((stats.g[x.id] || {}).ok || 0, MATH_GOAL), 0) / (MATH_GENS.length * MATH_GOAL);
+  if (subject === '算数') return MATH_GENS.reduce((a, x) => a + mathCredit(x), 0) / (MATH_GENS.length * MATH_GOAL);
   const pool = POOLS()[subject]; if (!pool || !pool.length) return 0;
-  return pool.filter(q => (stats.q[q.key] || {}).ok > 0).length / pool.length;
+  if (subject === 'じっくり') return pool.filter(q => { const o = stats.q[q.key]; return o && o.ok + o.ng > 0; }).length / pool.length;   // 最後まで完成できたらOK
+  return pool.filter(doneQ).length / pool.length;
 }
 const ART_CACHE = {};
 function artCells(subject) {   // 点灯する順（下の行から、同じ行の中は まぜる）を一度だけ作る
@@ -629,7 +634,7 @@ function teacher() {
   app.querySelectorAll('[data-easy]').forEach(b => b.onclick = () => { lsSet('kgk_easy', b.dataset.easy); teacher(); });
   $('#nm').onchange = e => setName(e.target.value);
   $('#back').onclick = home; $('#csv').onclick = downloadCsv;
-  $('#reset').onclick = () => { if (confirm('きろくを全部消します（まちがい直しの待ちも消えます）。いいですか？')) { stats = { unit: {}, q: {}, g: {}, pend: {} }; saveStats(); teacher(); } };
+  $('#reset').onclick = () => { if (confirm('きろくを全部消します（まちがい直しの待ちも消えます）。いいですか？')) { stats = { unit: {}, q: {}, g: {}, pend: {}, rd: {} }; saveStats(); teacher(); } };
 }
 function downloadCsv() {
   const q = s => '"' + String(s).replace(/"/g, '""') + '"';
