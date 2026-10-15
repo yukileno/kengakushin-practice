@@ -62,6 +62,14 @@ input.ans:disabled{background:#eef2f7;border-color:var(--line)}
 .fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 .2em;line-height:1.15;font-size:.95em}
 .fr>span:first-child{border-bottom:2px solid currentColor;padding:0 .25em}
 .mx{font-size:1.15em;margin-right:.05em}
+.fin{display:inline-flex;align-items:center;gap:10px;vertical-align:middle;flex-wrap:wrap}
+.fin input{font-size:1.5rem;padding:8px 4px;border:2px solid var(--main);border-radius:10px;text-align:center;font-family:inherit;width:3.4em}
+.fin input:disabled{background:#eef2f7;border-color:var(--line)}
+.fin .st{display:inline-flex;flex-direction:column;align-items:center;gap:5px}
+.fin .bar{width:100%;border-top:3px solid currentColor}
+.fin .wh{display:flex;flex-direction:column;align-items:center;font-size:.75rem;color:var(--sub,#667)}
+.fin .wh input{width:3em}
+.fin .lb{font-size:.75rem;color:var(--sub,#667)}
 table{border-collapse:collapse;width:100%;font-size:.95rem}
 th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
 th{color:var(--sub);font-weight:600;font-size:.85rem}
@@ -151,6 +159,30 @@ function parseFrac(raw) {
   if ((m = s.match(/^(\d+) (\d+)\/(\d+)$/))) return { w: +m[1], n: +m[2], d: +m[3], mixed: true };
   return null;
 }
+/* ---------- 分数の入力枠（整数・分子・分母） ---------- */
+function fracBox(p, v) {
+  v = v || {};
+  const f = (id, val, lab) => `<input id="${p}${id}" class="fi" inputmode="numeric" autocomplete="off" value="${esc(val || '')}" aria-label="${lab}">`;
+  return `<span class="fin"><span class="wh">${f('w', v.w, '整数')}<span>整数<br>（帯分数のとき）</span></span>
+    <span class="st">${f('n', v.n, '分子')}<span class="bar"></span>${f('d', v.d, '分母')}</span></span>`;
+}
+function fracRead(p) {
+  const g = id => { const e = $('#' + p + id); return e ? e.value.normalize('NFKC').replace(/\s/g, '') : ''; };
+  const w = g('w'), n = g('n'), d = g('d');
+  R.draft = { w, n, d };
+  if (![w, n, d].every(x => /^\d*$/.test(x))) return { err: '枠には 数字だけを入れてね。' };
+  if (!w && !n && !d) return { s: '' };
+  if (!n && !d) return { s: w };                          // 整数だけの答え
+  if (!n) return { err: '分子（上の枠）を入れてね。' };
+  if (!d) return { err: '分母（下の枠）を入れてね。' };
+  return { s: w ? `${w} ${n}/${d}` : `${n}/${d}` };
+}
+function fracView(s) {
+  const p = parseFrac(s);
+  if (!p) return esc(s);
+  if (p.whole) return `<b style="font-size:1.5rem">${p.w}</b>`;
+  return `<span style="font-size:1.4rem">${p.w ? `<span class="mx">${p.w}</span>` : ''}${FR(p.n, p.d)}</span>`;
+}
 // 戻り値 {st:'ok'|'ng'|'fmt', msg}
 function judge(q, raw, easy) {
   const input = String(raw).trim();
@@ -164,7 +196,7 @@ function judge(q, raw, easy) {
   }
   if (q.kind === 'frac') {
     const p = parseFrac(input);
-    if (!p || p.d === 0) return { st: 'fmt', msg: '分数は 3/4、帯分数は 1と3/4 のように入力してね。' };
+    if (!p || p.d === 0) return { st: 'fmt', msg: '分母は 0 にできないよ。分子（上）と分母（下）を入れてね。' };
     const N = p.w * p.d + p.n, D = p.d;
     if (N * q.ans.d !== q.ans.n * D) return { st: 'ng' };
     if (p.n > 0 && gcd(p.n, p.d) !== 1) return { st: 'fmt', msg: '大きさは合っているよ。約分しよう！' };
@@ -287,7 +319,7 @@ function next() {
   const di = R.sched.findIndex(s => s.due <= R.n);
   if (di >= 0) it = makeItem(R.sched.splice(di, 1)[0]);
   if (!it) it = makeFresh();
-  R.n++; R.cur = it; R.phase = 'ask'; R.msg = ''; R.last = ''; R.wp = false;
+  R.n++; R.cur = it; R.phase = 'ask'; R.msg = ''; R.last = ''; R.wp = false; R.draft = null;
   render();
 }
 function schedule(it, level, gap) {
@@ -309,7 +341,7 @@ function result(it, ok) {
   saveStats();
 }
 
-const HINT = q => q.kind === 'choice' ? (q.hint || '正しいものを えらんで おしてね。') : q.hint ? q.hint : q.kind === 'frac' ?'分数は 3/4、帯分数は 1と3/4 のように入力。' : q.kind === 'num' ? '数字を入力（全角・半角どちらでもOK）。' : (isEasy() ? 'ひらがなでもOK。' : '漢字で書けるものは漢字で。');
+const HINT = q => q.kind === 'choice' ? (q.hint || '正しいものを えらんで おしてね。') : q.hint ? q.hint : q.kind === 'frac' ?'上の枠に分子、下の枠に分母を入力。帯分数のときだけ、左の枠に整数も入れよう。' : q.kind === 'num' ? '数字を入力（全角・半角どちらでもOK）。' : (isEasy() ? 'ひらがなでもOK。' : '漢字で書けるものは漢字で。');
 function render() {
   const it = R.cur, q = it.q, ph = R.phase;
   const tag = it.retry ? '<span class="tag">まちがい直し</span>' : '';
@@ -319,19 +351,19 @@ function render() {
       <div class="hint">${HINT(q)}</div>
       <div style="margin-top:14px"><button class="ghost" id="show">わからない（答えを見る）</button></div>`;
   } else if (ph === 'ask') {
-    body = `<div class="inrow"><input class="ans" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="答え"> <span class="unit">${esc(q.unit)}</span> <button class="primary" id="go">こたえる</button></div>
+    body = `<div class="inrow">${q.kind === 'frac' ? fracBox('f', R.draft) : '<input class="ans" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="答え">'} <span class="unit">${esc(q.unit)}</span> <button class="primary" id="go">こたえる</button></div>
       <div class="hint">${HINT(q)}</div>${R.msg ? `<div class="fb fmt">${esc(R.msg)}</div>` : ''}
       <div style="margin-top:14px"><button class="ghost" id="show">わからない（答えを見る）</button></div>`;
   } else if (ph === 'ok') {
-    body = `<div class="inrow"><input class="ans" disabled value="${esc(R.last)}"> <span class="unit">${esc(q.unit)}</span></div>
+    body = `<div class="inrow">${q.kind === 'frac' ? fracView(R.last) : `<input class="ans" disabled value="${esc(R.last)}">`} <span class="unit">${esc(q.unit)}</span></div>
       <div class="fb ok"><b>○ せいかい！</b></div>`;
     if (q.kind === 'choice') body = `<div class="fb ok"><b>○ せいかい！</b><div class="ansline">${esc(R.last)}</div></div>`;
   } else {
     const fixed = ph === 'fixed';
-    body = `${q.kind === 'choice' ? (R.last ? `<div class="small" style="margin-bottom:6px">きみの 答え：${esc(R.last)}</div>` : '') : `<div class="inrow"><input class="ans" disabled value="${esc(R.last)}"> <span class="unit">${esc(q.unit)}</span></div>`}
+    body = `${q.kind === 'choice' ? (R.last ? `<div class="small" style="margin-bottom:6px">きみの 答え：${esc(R.last)}</div>` : '') : `<div class="inrow">${q.kind === 'frac' ? (R.last ? fracView(R.last) : '') : `<input class="ans" disabled value="${esc(R.last)}">`} <span class="unit">${esc(q.unit)}</span></div>`}
       <div class="fb ng"><b>${fixed && !R.wp ? '答え：' : '× ざんねん。答えは…'}</b><div class="ansline">${esc(showAnswer(q))}</div>${q.explain ? `<div class="exp">${q.explain}</div>` : ''}
       ${fixed ? '<div class="small" style="margin-top:6px">あとで また 出るよ。</div>' : `<div style="margin-top:10px;color:var(--ink)">答えを見ながら、もう一度 入力しよう。</div>
-      <div class="inrow" style="margin-top:8px"><input class="ans" id="re" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="打ち直し"> <span class="unit">${esc(q.unit)}</span> <button class="primary" id="rego">うちなおし</button></div>
+      <div class="inrow" style="margin-top:8px">${q.kind === 'frac' ? fracBox('r', R.draft) : '<input class="ans" id="re" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="打ち直し">'} <span class="unit">${esc(q.unit)}</span> <button class="primary" id="rego">うちなおし</button></div>
       ${R.msg ? `<div class="hint" style="color:var(--warn)">${esc(R.msg)}</div>` : ''}`}</div>
       ${fixed ? '<div style="margin-top:12px"><button class="primary" id="nx">つぎへ（Enter）</button></div>' : ''}`;
   }
@@ -347,20 +379,27 @@ function render() {
   const on = (id, f) => { const e = $(id); if (e) e.onclick = f; };
   on('#go', submit); on('#show', giveUp); on('#nx', next); on('#rego', retype); on('#quit', home);
   app.querySelectorAll('button.choice').forEach(b => b.onclick = () => chooseAns(q.choices[+b.dataset.c]));
-  const field = $('#ans') || $('#re');
-  if (field) { field.focus(); field.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); (ph === 'ask' ? submit : retype)(); } }); }
+  const fields = q.kind === 'frac' ? [...app.querySelectorAll('input.fi')] : [$('#ans') || $('#re')].filter(Boolean);
+  fields.forEach(field => field.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); (ph === 'ask' ? submit : retype)(); } }));
+  if (fields.length) (q.kind === 'frac' ? fields[R.draft && R.draft.n ? 2 : 1] : fields[0]).focus();
 }
 function submit() {
-  const v = $('#ans').value, it = R.cur;
+  const it = R.cur;
+  let v;
+  if (it.q.kind === 'frac') {
+    const f = fracRead('f');
+    if (f.err) { R.msg = f.err; render(); return; }
+    v = f.s;
+  } else v = $('#ans').value;
   const r = judge(it.q, v, isEasy());
   if (r.st === 'fmt') { R.msg = r.msg; render(); return; }
   R.last = v.trim();
   if (r.st === 'ok') {
     result(it, true); R.phase = 'ok'; render();
     R.timer = setTimeout(next, 650);        // せいかいなら、すぐ つぎへ
-  } else { result(it, false); R.phase = 'ng'; R.msg = ''; render(); }
+  } else { result(it, false); R.phase = 'ng'; R.msg = ''; R.draft = null; render(); }
 }
-function giveUp() { R.last = ''; result(R.cur, false); R.phase = R.cur.q.kind === 'choice' ? 'fixed' : 'ng'; R.msg = ''; render(); }
+function giveUp() { R.draft = null; R.last = ''; result(R.cur, false); R.phase = R.cur.q.kind === 'choice' ? 'fixed' : 'ng'; R.msg = ''; render(); }
 function chooseAns(v) {   // 選択式：えらんだ答えを判定（まちがえたら、答えを見せて つぎへ）
   const it = R.cur, r = judge(it.q, v, false);
   R.last = v; R.msg = '';
@@ -368,7 +407,13 @@ function chooseAns(v) {   // 選択式：えらんだ答えを判定（まちが
   else { result(it, false); R.phase = 'fixed'; R.wp = true; render(); }
 }
 function retype() {
-  const q = R.cur.q, v = $('#re').value;
+  const q = R.cur.q;
+  let v;
+  if (q.kind === 'frac') {
+    const f = fracRead('r');
+    if (f.err) { R.msg = f.err; render(); return; }
+    v = f.s;
+  } else v = $('#re').value;
   const same = normText(v, false) === normText(canonical(q), false) || judge(q.kind === 'frac' ? { ...q, form: 'any' } : q, v, false).st === 'ok';
   if (!same) { R.msg = '答えと同じになるように、もう一度。'; render(); return; }
   R.last = v.trim(); R.msg = ''; R.phase = 'fixed'; render();
