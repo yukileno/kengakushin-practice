@@ -13,6 +13,13 @@
 html{color-scheme:light}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Yu Gothic UI","Meiryo","Hiragino Sans",sans-serif;line-height:1.6}
 #app{max-width:760px;margin:0 auto;padding:16px}
+#app.wide{max-width:1180px}
+.split{display:flex;gap:18px;align-items:flex-start}
+.split>.main{flex:1;min-width:0}
+.artbox{flex:0 0 auto;position:sticky;top:12px;text-align:center}
+.artbox canvas{display:block;height:min(82vh,720px);width:auto;aspect-ratio:var(--ar);max-width:44vw;background:#fff;border:1px solid var(--line);border-radius:12px}
+.artbox .pc{font-size:.85rem;color:var(--sub);margin-top:4px}
+@media (max-width:760px){.split{flex-direction:column}.artbox{position:static;order:2;align-self:center}.artbox canvas{height:240px;max-width:100%}}
 h1{font-size:1.25rem;margin:8px 0 12px}
 h2{font-size:1.05rem;margin:0 0 8px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
@@ -144,6 +151,7 @@ table.t th{background:#eef1f5;font-weight:600}
 <script src="data/kokugo.js"></script>
 <script src="data/shiryo.js"></script>
 <script src="data/jikkuri.js"></script>
+<script src="data/art.js"></script>
 <script>
 'use strict';
 /* ---------- 判定 ---------- */
@@ -274,6 +282,7 @@ const app = $('#app');
 let R = null;   // いまの練習の状態
 
 function home() {
+  app.classList.remove('wide');
   if (R) { clearTimeout(R.timer); R = null; }
   const pend = Object.values(stats.pend);
   const pm = pend.filter(p => p.sub === '算数').length, ps = pend.filter(p => p.sub === '社会').length, pk = pend.filter(p => p.sub === '国語').length, pr = pend.filter(p => p.sub === 'しりょう').length;
@@ -351,6 +360,33 @@ function result(it, ok) {
   saveStats();
 }
 
+/* ---------- 達成ドット絵（下から順に点灯） ---------- */
+const POOLS = () => ({ '算数': null, '社会': SOCIAL, '国語': KOKUGO, 'しりょう': SHIRYO });
+function achieveRate(subject) {   // 1回でも正解した問題の割合（国語・社会・しりょう）
+  const pool = POOLS()[subject]; if (!pool || !pool.length) return 0;
+  return pool.filter(q => (stats.q[q.key] || {}).ok > 0).length / pool.length;
+}
+const ART_CACHE = {};
+function artCells(subject) {   // 点灯する順（下の行から、同じ行の中は まぜる）を一度だけ作る
+  if (ART_CACHE[subject]) return ART_CACHE[subject];
+  const a = ART[subject], cells = [];
+  for (let y = a.h - 1; y >= 0; y--) {
+    const row = [];
+    for (let x = 0; x < a.w; x++) if (a.rows[y][x] !== '.') row.push([x, y, +a.rows[y][x]]);
+    let seed = y * 7919 + 13;   // 毎回おなじ並びになる かんたんな乱数
+    for (let i = row.length - 1; i > 0; i--) { seed = (seed * 1103515245 + 12345) & 0x7fffffff; const j = seed % (i + 1); [row[i], row[j]] = [row[j], row[i]]; }
+    cells.push(...row);
+  }
+  return (ART_CACHE[subject] = cells);
+}
+function drawArt(subject) {
+  const a = ART[subject], cv = $('#art'); if (!cv) return;
+  const S = 6; cv.width = a.w * S; cv.height = a.h * S;
+  const g = cv.getContext('2d'), cells = artCells(subject), rate = achieveRate(subject), lit = Math.round(rate * cells.length);
+  g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
+  cells.forEach(([x, y, c], i) => { g.fillStyle = i < lit ? a.pal[c] : '#dde3ec'; g.fillRect(x * S, y * S, S, S); });
+  $('#artpc').textContent = `たっせい ${Math.floor(rate * 100)}%`;
+}
 const HINT = q => q.kind === 'choice' ? (q.hint || '正しいものを えらんで おしてね。') : q.hint ? q.hint : q.kind === 'frac' ?'上の枠に分子、下の枠に分母を入力。帯分数のときだけ、左の枠に整数も入れよう。' : q.kind === 'num' ? '数字を入力（全角・半角どちらでもOK）。' : (isEasy() ? 'ひらがなでもOK。' : '漢字で書けるものは漢字で。');
 function render() {
   const it = R.cur, q = it.q, ph = R.phase;
@@ -377,7 +413,9 @@ function render() {
       ${R.msg ? `<div class="hint" style="color:var(--warn)">${esc(R.msg)}</div>` : ''}`}</div>
       ${fixed ? '<div style="margin-top:12px"><button class="primary" id="nx">つぎへ（Enter）</button></div>' : ''}`;
   }
-  app.innerHTML = `
+  const art = ART[R.subject];
+  app.classList.toggle('wide', !!art);
+  app.innerHTML = `${art ? '<div class="split"><div class="main">' : ''}
   <div class="card">
     <div class="meta"><span>${esc(R.subject)} ${tag}</span><span>せいかい ${R.right}／${R.n - (ph === 'ask' ? 1 : 0)}　れんぞく ${R.streak}</span></div>
     ${q.figFirst && q.fig ? `<div class="fig">${q.fig}</div>` : ''}
@@ -385,7 +423,8 @@ function render() {
     ${!q.figFirst && q.fig ? `<div class="fig">${q.fig}</div>` : ''}
     ${body}
     <div class="row" style="margin-top:16px"><button class="ghost" id="quit">おわる</button></div>
-  </div>`;
+  </div>${art ? `</div><div class="artbox"><canvas id="art" style="--ar:${art.w}/${art.h}" aria-label="達成のドット絵"></canvas><div class="pc" id="artpc"></div></div></div>` : ''}`;
+  if (art) drawArt(R.subject);
   const on = (id, f) => { const e = $(id); if (e) e.onclick = f; };
   on('#go', submit); on('#show', giveUp); on('#nx', next); on('#rego', retype); on('#quit', home);
   app.querySelectorAll('button.choice').forEach(b => b.onclick = () => chooseAns(q.choices[+b.dataset.c]));
