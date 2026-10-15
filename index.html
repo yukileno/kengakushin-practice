@@ -717,10 +717,18 @@ function jkList() {
   app.querySelectorAll('.jk-item').forEach(b => b.onclick = () => jkStart(+b.dataset.i));
   $('#jkhome').onclick = home;
 }
+// 会話の「ダミーのセリフ」（条件ではない）。毎回、2〜3こ まぜて、大切なセリフの場所を かえる
+const JK_DECOY = ['メモは、ノートにきれいに書いておこうね。', '先生にも、あとで見てもらえるといいね。', 'おわったら、みんなでふりかえりをしようか。', '時間は、ゆっくり使っても大じょうぶだよ。', '友だちにも、手つだってもらおうか。', 'さっき見た資料は、おもしろかったね。', '書くときは、えんぴつをけずっておこうね。', 'ほかの班は、どんなふうに進めているのかな。', 'つかれたら、ちょっと休けいしようか。', '次の時間までに、どこまで進められるかな。', '発表する日が、たのしみだね。', '今日は、ここまでやってみよう。'];
+function jkLines1(p) {   // 会話の順番はそのまま、ダミーを ランダムな場所に入れる。【 】の ヒントは けす
+  const L = p.s1.lines.map(l => [l[0], l[1], l[2].replace(/[【】]/g, ''), l[3]]);
+  const who = [[L[0][0], L[0][1]], [L[1][0], L[1][1]]];
+  shuffle(JK_DECOY).slice(0, ri(2, 3)).forEach(t => { const w = pick(who); L.splice(ri(1, L.length), 0, [w[0], w[1], t, '']); });
+  return L;
+}
 function jkStart(i) {
   const p = JIKKURI[i];
   JK = {
-    i, p, mistakes: 0, step: 1, mark: new Set(), fb1: null, ev: { A: new Set(), B: new Set() }, fb2: null, fill: {}, fb3: null,
+    i, p, lines1: jkLines1(p), mistakes: 0, step: 1, mark: new Set(), fb1: null, ev: { A: new Set(), B: new Set() }, fb2: null, fill: {}, fb3: null,
     order: { A: shuffle(p.s2.A.map((_, k) => k)), B: shuffle(p.s2.B.map((_, k) => k)) },
     opts: p.s3.parts.map(x => x[0] === 's' ? shuffle(x[1].map((t, k) => [t, k === 0])) : null)
   };
@@ -737,7 +745,7 @@ function jkRender() {
 }
 function jkStep1() {
   const p = JK.p, st = JK, fb = st.fb1;
-  const items = p.s1.lines.map((l, i) => {
+  const items = st.lines1.map((l, i) => {
     let cls = 'jk-line';
     if (fb) { const isT = !!l[3], mk = st.mark.has(i); cls += fb.ok ? (isT ? ' good' : '') : (mk && isT ? ' good' : mk && !isT ? ' bad' : (!mk && isT ? ' miss' : '')); }
     else if (st.mark.has(i)) cls += ' mk';
@@ -749,7 +757,7 @@ function jkStep1() {
     : `<div class="jk-fb warn">${fb.extra ? '大切ではないセリフがまざっているよ（赤いところ）。' : ''}${fb.missing ? 'まだ見つけていない大切なセリフがあるよ（点線のところ）。' : ''}もう一度、えらびなおしてみよう。</div>`;
   return `<div class="jk-instr">${esc(p.s1.instr)}</div>${items}${msg}
     <div class="jk-row">${fb && fb.ok ? '<button class="primary" id="jknext">② 証拠を集めに行く →</button>' : `<button class="primary" id="jkchk1" ${st.mark.size ? '' : 'disabled'}>これでマーカーを引いた！</button>`}</div>
-    <p class="small">（大切なセリフは ${p.s1.lines.filter(l => l[3]).length} つ）</p>`;
+    <p class="small">（大切なセリフは ${st.lines1.filter(l => l[3]).length} つ）</p>`;
 }
 function jkStep2() {
   const p = JK.p, st = JK, fb = st.fb2;
@@ -789,7 +797,7 @@ function jkBind() {
   const miss = () => { st.mistakes++; };
   document.querySelectorAll('.jk-line[data-l]').forEach(b => b.onclick = () => { const i = +b.dataset.l; st.fb1 = null; st.mark.has(i) ? st.mark.delete(i) : st.mark.add(i); jkRender(); });
   on('#jkchk1', () => {
-    const t = new Set(p.s1.lines.map((l, i) => l[3] ? i : -1).filter(i => i >= 0));
+    const t = new Set(st.lines1.map((l, i) => l[3] ? i : -1).filter(i => i >= 0));
     const missing = [...t].some(i => !st.mark.has(i)), extra = [...st.mark].some(i => !t.has(i));
     st.fb1 = { ok: !missing && !extra, missing, extra }; if (!st.fb1.ok) miss(); jkRender();
   });
