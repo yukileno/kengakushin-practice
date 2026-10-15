@@ -43,7 +43,27 @@ button.ghost{background:#fff;color:var(--sub);border:1px solid var(--line);borde
 .lead{font-size:1.1rem;color:var(--sub);margin:0 0 22px}
 .bigbtns{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
 .bigbtn{width:min(44vw,260px);min-width:150px;aspect-ratio:1/0.8;border:0;border-radius:22px;background:var(--main);color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 0 var(--main-d)}
-.bigbtn span{font-size:2.4rem;font-weight:700}
+.bigbtn{aspect-ratio:auto;padding:12px 10px 14px}
+.bigbtn span{font-size:2.4rem;font-weight:700;line-height:1.2}
+.bigbtn canvas.mini{height:150px;width:auto;aspect-ratio:var(--ar);background:#fff;border-radius:10px}
+.bigbtn small.pc{font-weight:700;opacity:1}
+#app:has(.homewrap){max-width:1180px}
+@media (min-width:1000px){.bigbtns .bigbtn{width:calc((100% - 72px)/5);min-width:0}.bigbtn canvas.mini{height:190px}.bigbtn span{font-size:1.9rem}}
+.doneRow{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+.doneBtn{font:inherit;font-size:.95rem;padding:6px 14px;border:2px solid #e0a800;background:#fff8dc;color:#7a5a00;border-radius:999px;cursor:pointer}
+#cele{position:fixed;inset:0;z-index:9999;background:radial-gradient(circle at 50% 40%,#2b3a8c,#111a45);display:flex;align-items:center;justify-content:center;overflow:auto;animation:cfade .4s}
+#cele #confetti{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#cele .cbox{position:relative;text-align:center;color:#fff;padding:12px 16px;max-width:96vw}
+#cele .ctitle{font-size:clamp(2rem,6vw,3.6rem);font-weight:800;background:linear-gradient(90deg,#ff4d6d,#ffb703,#80ed99,#4cc9f0,#c77dff,#ff4d6d);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:rainbow 2.5s linear infinite,pop .8s cubic-bezier(.2,1.6,.4,1)}
+#cele .csub{font-size:clamp(1.1rem,3vw,1.6rem);margin:4px 0 10px}
+#cele canvas#cart{height:min(52vh,460px);width:auto;aspect-ratio:var(--ar);max-width:90vw;background:#fff;border-radius:14px;box-shadow:0 0 0 4px #ffd166,0 0 40px 10px rgba(255,209,102,.7);animation:glow 1.4s ease-in-out infinite alternate}
+#cele .cdate{margin-top:8px;font-size:1.1rem;opacity:.9}
+#cele .cmsg{font-size:1.2rem;font-weight:700;color:#ffd166;margin:2px 0 10px}
+@keyframes cfade{from{opacity:0}to{opacity:1}}
+@keyframes rainbow{to{background-position:300% 0}}
+@keyframes pop{0%{transform:scale(.2);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes glow{from{box-shadow:0 0 0 4px #ffd166,0 0 20px 4px rgba(255,209,102,.5)}to{box-shadow:0 0 0 4px #fff,0 0 60px 18px rgba(255,209,102,.95)}}
+@media (prefers-reduced-motion:reduce){#cele .ctitle,#cele canvas#cart{animation:none}}
 .bigbtn small{font-size:.85rem;opacity:.9}
 .bigbtn.soc{background:#2a8a5a;box-shadow:0 4px 0 #1c6a42}
 .bigbtn.kok{background:#b4532a;box-shadow:0 4px 0 #8a3d1c}
@@ -281,6 +301,7 @@ const wOf = o => (o ? 0.6 + 3 * (o.ng + 0.5) / (o.ok + o.ng + 1) : 2.2);   // �
 const app = $('#app');
 let R = null;   // いまの練習の状態
 
+const miniArt = s => ART[s] ? `<canvas class="mini" data-s="${s}" style="--ar:${ART[s].w}/${ART[s].h}" aria-label="${s}の達成ドット絵"></canvas><small class="pc">たっせい ${Math.floor(achieveRate(s) * 100)}%</small>` : '';
 function home() {
   app.classList.remove('wide');
   if (R) { clearTimeout(R.timer); R = null; }
@@ -291,15 +312,18 @@ function home() {
     <h1>県学診 れんしゅう</h1>
     <p class="lead">やりたい きょうかを おしてね。すぐ 問題が 出るよ！</p>
     <div class="bigbtns">
-      <button class="bigbtn" data-sub="算数"><span>算数</span>${pm ? `<small>まちがい直し ${pm}問</small>` : ''}</button>
-      <button class="bigbtn soc" data-sub="社会"><span>社会</span>${ps ? `<small>まちがい直し ${ps}問</small>` : ''}</button>
-      <button class="bigbtn kok" data-sub="国語"><span>国語</span>${pk ? `<small>まちがい直し ${pk}問</small>` : ''}</button>
-      <button class="bigbtn shr" data-sub="しりょう"><span>しりょう</span><small>グラフや表を よんで こたえる</small>${pr ? `<small>まちがい直し ${pr}問</small>` : ''}</button>
-      <button class="bigbtn jk" data-sub="じっくり"><span>じっくり</span><small>3つの手じゅんで 文をつくる</small></button>
+      <button class="bigbtn" data-sub="算数">${miniArt('算数')}<span>算数</span>${pm ? `<small>まちがい直し ${pm}問</small>` : ''}</button>
+      <button class="bigbtn soc" data-sub="社会">${miniArt('社会')}<span>社会</span>${ps ? `<small>まちがい直し ${ps}問</small>` : ''}</button>
+      <button class="bigbtn kok" data-sub="国語">${miniArt('国語')}<span>国語</span>${pk ? `<small>まちがい直し ${pk}問</small>` : ''}</button>
+      <button class="bigbtn shr" data-sub="しりょう">${miniArt('しりょう')}<span>しりょう</span><small>グラフや表を よんで こたえる</small>${pr ? `<small>まちがい直し ${pr}問</small>` : ''}</button>
+      <button class="bigbtn jk" data-sub="じっくり">${miniArt('じっくり')}<span>じっくり</span><small>3つの手じゅんで 文をつくる</small></button>
     </div>
+    ${Object.keys(getDone()).length ? `<div class="doneRow">${Object.entries(getDone()).filter(([k]) => ART[k]).map(([k, d]) => `<button class="doneBtn" data-cele="${esc(k)}">★ ${esc(k)} コンプリート（${esc(d)}）</button>`).join('')}</div>` : ''}
     <p class="small">まちがえた問題は、あとで また 出るよ。</p>
     <div class="foot"><button class="ghost" id="teacher">せんせい用</button></div>
   </div>`;
+  app.querySelectorAll('canvas.mini').forEach(c => paintArt(c, c.dataset.s, achieveRate(c.dataset.s), 3));
+  app.querySelectorAll('[data-cele]').forEach(b => b.onclick = () => celebrate(b.dataset.cele));
   app.querySelectorAll('[data-sub]').forEach(b => b.onclick = () => (b.dataset.sub === 'じっくり' ? jkList() : begin(b.dataset.sub)));
   $('#teacher').onclick = teacher;
 }
@@ -358,11 +382,14 @@ function result(it, ok) {
     R.streak = 0; schedule(it, 1, 3);                // まちがえた → 3問あとにまた出す
   }
   saveStats();
+  checkDone(R.subject);
 }
 
 /* ---------- 達成ドット絵（下から順に点灯） ---------- */
-const POOLS = () => ({ '算数': null, '社会': SOCIAL, '国語': KOKUGO, 'しりょう': SHIRYO });
-function achieveRate(subject) {   // 1回でも正解した問題の割合（国語・社会・しりょう）
+const POOLS = () => ({ '算数': null, '社会': SOCIAL, '国語': KOKUGO, 'しりょう': SHIRYO, 'じっくり': JIKKURI });
+const MATH_GOAL = 3;   // 算数は、問題のパターンごとに 3回 正解したら「できた」とする
+function achieveRate(subject) {   // 国語・社会・しりょう：1回でも正解した問題の割合 ／ 算数：パターンごとの正解数（最大3回）の合計の割合
+  if (subject === '算数') return MATH_GENS.reduce((a, x) => a + Math.min((stats.g[x.id] || {}).ok || 0, MATH_GOAL), 0) / (MATH_GENS.length * MATH_GOAL);
   const pool = POOLS()[subject]; if (!pool || !pool.length) return 0;
   return pool.filter(q => (stats.q[q.key] || {}).ok > 0).length / pool.length;
 }
@@ -372,20 +399,77 @@ function artCells(subject) {   // 点灯する順（下の行から、同じ行�
   const a = ART[subject], cells = [];
   for (let y = a.h - 1; y >= 0; y--) {
     const row = [];
-    for (let x = 0; x < a.w; x++) if (a.rows[y][x] !== '.') row.push([x, y, +a.rows[y][x]]);
+    for (let x = 0; x < a.w; x++) if (a.rows[y][x] !== '.') row.push([x, y, parseInt(a.rows[y][x], 16)]);
     let seed = y * 7919 + 13;   // 毎回おなじ並びになる かんたんな乱数
     for (let i = row.length - 1; i > 0; i--) { seed = (seed * 1103515245 + 12345) & 0x7fffffff; const j = seed % (i + 1); [row[i], row[j]] = [row[j], row[i]]; }
     cells.push(...row);
   }
   return (ART_CACHE[subject] = cells);
 }
-function drawArt(subject) {
-  const a = ART[subject], cv = $('#art'); if (!cv) return;
-  const S = 6; cv.width = a.w * S; cv.height = a.h * S;
-  const g = cv.getContext('2d'), cells = artCells(subject), rate = achieveRate(subject), lit = Math.round(rate * cells.length);
+// cv に教科の絵をかく（rate：0〜1。点灯するマスの割合）
+function paintArt(cv, subject, rate, S) {
+  const a = ART[subject]; cv.width = a.w * S; cv.height = a.h * S;
+  const g = cv.getContext('2d'), cells = artCells(subject), lit = Math.round(rate * cells.length);
   g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height);
   cells.forEach(([x, y, c], i) => { g.fillStyle = i < lit ? a.pal[c] : '#dde3ec'; g.fillRect(x * S, y * S, S, S); });
+}
+function drawArt(subject) {
+  const cv = $('#art'); if (!cv) return;
+  const rate = achieveRate(subject);
+  paintArt(cv, subject, rate, 6);
   $('#artpc').textContent = `たっせい ${Math.floor(rate * 100)}%`;
+}
+
+/* ---------- 100% のお祝い ---------- */
+const DONE_LS = 'kgk_done';
+const getDone = () => { try { return JSON.parse(lsGet(DONE_LS, '{}')) || {}; } catch (e) { return {}; } };
+const today = () => { const d = new Date(); return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`; };
+function checkDone(subject) {   // 100% になった最初の1回だけ、お祝いを出す
+  if (!ART[subject] || achieveRate(subject) < 0.9999) return;
+  const done = getDone(); if (done[subject]) return;
+  done[subject] = today(); lsSet(DONE_LS, JSON.stringify(done));
+  celebrate(subject);
+}
+let CELE = null;
+function closeCelebrate() { if (!CELE) return; cancelAnimationFrame(CELE.raf); removeEventListener('resize', CELE.fit); CELE.el.remove(); CELE = null; }
+function celebrate(subject) {
+  closeCelebrate();
+  const done = getDone(), name = getName() || 'きみ', date = done[subject] || today();
+  const el = document.createElement('div'); el.id = 'cele';
+  el.innerHTML = `<canvas id="confetti"></canvas>
+    <div class="cbox">
+      <div class="ctitle">おめでとう！</div>
+      <div class="csub">${esc(name)} さん　<b>${esc(subject)}</b> コンプリート！</div>
+      <canvas id="cart" style="--ar:${ART[subject].w}/${ART[subject].h}"></canvas>
+      <div class="cdate">${esc(date)}</div>
+      <div class="cmsg">この画面を 先生に 見せてね</div>
+      <button class="primary" id="cclose">とじる</button>
+    </div>`;
+  document.body.appendChild(el);
+  const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const art = $('#cart', el), t0 = performance.now(), DUR = reduce ? 1 : 2400;   // 絵が下から いっきに 点灯する
+  const cf = $('#confetti', el), g = cf.getContext('2d'), P = [], COL = ['#ff4d6d', '#ffb703', '#2ec4b6', '#4361ee', '#9b5de5', '#f15bb5', '#80ed99'];
+  const fit = () => { cf.width = innerWidth; cf.height = innerHeight; }; fit(); addEventListener('resize', fit);
+  const mk = (x, y, vx, vy) => ({ x, y, vx, vy, w: 6 + Math.random() * 8, h: 8 + Math.random() * 10, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: COL[(Math.random() * COL.length) | 0] });
+  const burst = (n, x, y) => { for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = 4 + Math.random() * 9; P.push(mk(x, y, Math.cos(a) * v, Math.sin(a) * v - 6)); } };
+  CELE = { el, raf: 0, fit };
+  const start = performance.now(); let nextBurst = 0, bursts = 0;
+  const frame = now => {
+    const p = Math.min(1, (now - t0) / DUR);
+    paintArt(art, subject, 1 - Math.pow(1 - p, 3), 4);
+    const t = now - start;
+    if (!reduce && t >= nextBurst && bursts < 8) { burst(70, cf.width * (0.15 + Math.random() * 0.7), cf.height * (0.2 + Math.random() * 0.3)); nextBurst += 650; bursts++; }
+    if (!reduce && t < 9000 && Math.random() < 0.5) P.push(mk(Math.random() * cf.width, -20, (Math.random() - .5) * 2, 2 + Math.random() * 3));
+    g.clearRect(0, 0, cf.width, cf.height);
+    for (let i = P.length - 1; i >= 0; i--) {
+      const q = P[i]; q.vy += 0.22; q.vx *= 0.99; q.x += q.vx; q.y += q.vy; q.r += q.vr;
+      if (q.y > cf.height + 30) { P.splice(i, 1); continue; }
+      g.save(); g.translate(q.x, q.y); g.rotate(q.r); g.fillStyle = q.c; g.fillRect(-q.w / 2, -q.h / 2, q.w, q.h); g.restore();
+    }
+    CELE.raf = requestAnimationFrame(frame);
+  };
+  CELE.raf = requestAnimationFrame(frame);
+  $('#cclose', el).onclick = closeCelebrate;
 }
 const HINT = q => q.kind === 'choice' ? (q.hint || '正しいものを えらんで おしてね。') : q.hint ? q.hint : q.kind === 'frac' ?'上の枠に分子、下の枠に分母を入力。帯分数のときだけ、左の枠に整数も入れよう。' : q.kind === 'num' ? '数字を入力（全角・半角どちらでもOK）。' : (isEasy() ? 'ひらがなでもOK。' : '漢字で書けるものは漢字で。');
 function render() {
@@ -500,7 +584,7 @@ function retype() {
 }
 // Enter で「つぎへ」（せいかい表示の間も、おして先に進める）
 document.addEventListener('keydown', e => {
-  if (!R || e.defaultPrevented || e.isComposing || e.key !== 'Enter') return;
+  if (!R || CELE || e.defaultPrevented || e.isComposing || e.key !== 'Enter') return;
   if (R.phase === 'ok' || R.phase === 'fixed') { e.preventDefault(); next(); }
 });
 
@@ -718,7 +802,7 @@ function jkBind() {
     if (!allOk && !empty) miss();
     if (allOk && !JKDONE.has(p.key)) {   // はじめて完成したときだけ、記録する（1回でできたら ○、まちがいがあれば ×）
       JKDONE.add(p.key); const ok = st.mistakes === 0;
-      bump(stats.unit, 'じっくり' + p.unit, ok); bump(stats.q, p.key, ok); saveStats();
+      bump(stats.unit, 'じっくり' + p.unit, ok); bump(stats.q, p.key, ok); saveStats(); checkDone('じっくり');
     }
     jkRender();
   });
