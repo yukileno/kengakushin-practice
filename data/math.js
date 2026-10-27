@@ -112,7 +112,8 @@ const MATH = {
     () => { let d, n; do { d = pick([2, 4, 5, 8, 20, 25]); n = ri(1, d - 1); } while (gcd(n, d) !== 1);
       return num(`${FR(n, d)} を小数で表しなさい。`, fmt(n * (1000 / d), 3), '', `${n} ÷ ${d} を計算する → ${fmt(n * (1000 / d), 3)}`, 'fracToDec'); },
     () => { let d, n; do { d = pick([2, 4, 5, 8, 20, 25]); n = ri(1, d - 1); } while (gcd(n, d) !== 1);
-      return frac(`${fmt(n * (1000 / d), 3)} を分数で表しなさい（約分する）。`, n, d, 'imp', `${n}/${d}`, `${fmt(n * (1000 / d), 3)} = ${n * (1000 / d)}/1000 を約分して ${n}/${d}`, 'decToFrac'); },
+      const den = d === 8 ? 1000 : (d === 2 || d === 5) ? 10 : 100;   // 小数の桁数に合わせた分母（0.6 → 6/10、0.25 → 25/100、0.125 → 125/1000）
+      return frac(`${fmt(n * (1000 / d), 3)} を分数で表しなさい（約分する）。`, n, d, 'imp', `${n}/${d}`, `${fmt(n * (1000 / d), 3)} = ${n * (den / d)}/${den} を約分して ${n}/${d}`, 'decToFrac'); },
     () => { let b, d, l; do { b = ri(2, 9); d = ri(2, 9); l = b * d / gcd(b, d); } while (b === d || l > 36);
       const a = ri(1, b - 1), c = ri(1, d - 1);
       return num(`${FR(a, b)} と ${FR(c, d)} を通分します。分母をそろえるとき、いちばん小さい共通の分母はいくつですか。`, l, '', `${b} と ${d} の最小公倍数が ${l}`, 'commonDen'); },
