@@ -126,6 +126,9 @@ ul.miss li{margin-bottom:8px}
 .q.sm{font-size:1.15rem;line-height:1.8}
 .choices.long button.choice{font-size:1rem}
 .fig .intro{margin:0 0 6px}
+.pas{border:2px solid var(--line);border-radius:10px;padding:10px 14px;margin:0 0 10px;background:#fcfcfd;font-size:1.02rem;line-height:1.9}
+.pas h3{font-size:1rem;margin:0 0 6px}
+.pas p{margin:4px 0}
 .shiryo{border:2px solid var(--line);border-radius:10px;padding:8px 12px;margin:10px 0;background:#fcfcfd}
 .shiryo h3{font-size:.95rem;margin:0 0 4px}
 .shiryo p{margin:4px 0}
@@ -178,6 +181,7 @@ table.t th{background:#eef1f5;font-weight:600}
 <script src="data/math.js"></script>
 <script src="data/social.js"></script>
 <script src="data/kokugo.js"></script>
+<script src="data/yomi.js"></script>
 <script src="data/shiryo.js"></script>
 <script src="data/jikkuri.js"></script>
 <script src="data/art.js"></script>
@@ -292,8 +296,8 @@ const SQ = Object.fromEntries(SOCIAL.concat(KOKUGO, SHIRYO).map(q => [q.key, q])
 function wordQ(q) {   // 社会・国語（一問一答・選択式）
   if (q.kind === 'choice') return { kind: 'choice', html: esc(q.text), ans: q.ans, alt: [], choices: shuffle(q.choices), unit: '', explain: esc(q.explain), key: q.key, fig: q.fig || '', figFirst: !!q.figFirst, hint: q.hint || '', long: q.choices.some(c => c.length > 30) };
   // 答えがぜんぶひらがなの問題（漢字の読みなど）は、予測変換が出ないよう、アプリ内のひらがなキーボードで入力する
-  const kana = !q.isNum && q.ans.length > 0 && q.ans.every(a => /^[ぁ-ゖー]+$/.test(a));
-  return { kind: q.isNum ? 'num' : 'text', html: esc(q.text), ans: q.isNum ? q.ans[0] : q.ans, alt: q.alt, unit: '', explain: '', key: q.key, isNum: q.isNum, hint: q.hint || '', kana };
+  const kana = !q.isNum && !q.noKana && q.ans.length > 0 && q.ans.every(a => /^[ぁ-ゖー]+$/.test(a));
+  return { kind: q.isNum ? 'num' : 'text', html: esc(q.text), ans: q.isNum ? q.ans[0] : q.ans, alt: q.alt, unit: '', explain: esc(q.explain || ''), key: q.key, isNum: q.isNum, hint: q.hint || '', kana, fig: q.fig || '', figFirst: !!q.figFirst };
 }
 function weightedPick(items, wf, n) {
   const pool = items.slice(), out = [];
