@@ -688,8 +688,12 @@ window.selfTest = function () {
   const bad = [];
   MATH_UNITS.forEach(u => MATH[u].forEach((g, i) => { for (let k = 0; k < 300; k++) {
     const q = g();
-    const probe = q.kind === 'frac' ? q.show.replace(/（.*$/, '') : q.ans;
+    const probe = q.kind === 'frac' ? q.show.replace(/（.*$/, '') : q.kind === 'choice' ? q.ans[0] : q.ans;
     if (judge(q, probe, false).st !== 'ok') bad.push([u, i, q.html, probe]);
+    if (q.kind === 'choice') {
+      if (new Set(q.choices).size !== q.choices.length || q.choices.length < 3 || !q.choices.includes(q.ans[0])) bad.push([u, i, q.html, '選択肢の不備']);
+      q.choices.filter(c => c !== q.ans[0]).forEach(c => { if (judge(q, c, false).st !== 'ng') bad.push([u, i, q.html, c, 'wrong-is-ok']); });
+    }
     if (q.kind === 'frac' && q.form === 'any' && q.show.includes('（')) { const m = q.show.match(/（(.*)）/)[1]; if (judge(q, m, false).st !== 'ok') bad.push([u, i, 'mixed', m]); }
   } }));
   SOCIAL.forEach(q => {

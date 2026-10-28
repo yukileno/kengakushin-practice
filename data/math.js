@@ -217,4 +217,169 @@ function fracAny(html, n, d, explain, key) {
   const show = d === 1 ? String(n) : (w > 0 ? `${n}/${d}（${w}と${r}/${d}）` : `${n}/${d}`);
   return frac(html, n, d, 'any', show, explain, key);
 }
+/* ---------- 算数：活用問題（表・グラフ・時こく・図と式）----------
+   県学診の算数に多い「場面や図・表・グラフを読んで、選ぶ・式を作る」形式。選択式は kind:'choice'（選択肢は出題のたびにまぜる） */
+const mch = (html, ans, wrong, explain, key, fig) => {
+  const a = String(ans), w = [...new Set(wrong.map(String))].filter(x => x !== a);
+  return { kind: 'choice', html, ans: [a], alt: [], choices: shuffle([a, ...w]), unit: '', explain: explain || '', key, fig: fig || '', figFirst: false, hint: '', long: false };
+};
+const t12 = (x, y, s, a = 'middle') => `<text x="${x}" y="${y}" text-anchor="${a}" fill="currentColor" stroke="none" font-size="12">${s}</text>`;
+const hm = t => `午後${Math.floor(t / 60)}時${t % 60}分`;   // t は 正午からの分数（60以上）
+
+// 二次元の表（見出し・5つの数）。cell(行, 列) が各らんの文字（行・列とも 2 が「合計」）
+function figTable(rowL, colL, cell) {
+  const td = s => `<td style="border:1px solid currentColor;padding:6px 10px;text-align:center;min-width:3em">${s}</td>`;
+  const th = s => `<td style="border:1px solid currentColor;padding:6px 10px;text-align:center;background:#eef3fb;font-size:.9rem">${s}</td>`;
+  return `<div style="overflow-x:auto"><table style="border-collapse:collapse;margin:4px auto"><tr>${th('')}${th(colL[0])}${th(colL[1])}${th('合計')}</tr>` +
+    [0, 1, 2].map(r => `<tr>${th(r < 2 ? rowL[r] : '合計')}${[0, 1, 2].map(c => td(cell(r, c))).join('')}</tr>`).join('') + `</table></div>`;
+}
+const TB = [
+  { r: ['読書がすき', '読書がきらい'], c: ['図書室を利用した', '図書室を利用していない'] },
+  { r: ['サッカーを見たことがある', 'サッカーを見たことがない'], c: ['野球を見たことがある', '野球を見たことがない'] },
+  { r: ['犬をかっている', '犬をかっていない'], c: ['ねこをかっている', 'ねこをかっていない'] },
+];
+const TL = ['ア', 'イ', 'ウ', 'エ', 'オ', 'カ', 'キ', 'ク'];   // 表のらんの記号（行ごと、右下の合計をのぞく）
+
+function figBar(labels, vals, g, unit) {
+  const W = 380, H = 224, L = 50, R = 10, B = 190, top = 26, n = vals.length;
+  const mx = (Math.max(...vals) / g + 1) * g, gap = (W - L - R) / n, bw = Math.min(36, gap * 0.55);
+  let s = t12(L - 6, top - 10, `(${unit})`, 'end');
+  for (let v = 0; v <= mx; v += g) { const y = B - v / mx * (B - top); s += `<line x1="${L}" y1="${y}" x2="${W - R}" y2="${y}" stroke="#bbb" stroke-width="1"/>` + t12(L - 6, y + 4, v, 'end'); }
+  vals.forEach((v, i) => { const x = L + gap * i + (gap - bw) / 2, y = B - v / mx * (B - top);
+    s += `<rect x="${x}" y="${y}" width="${bw}" height="${B - y}" fill="#7a9fd8" stroke="none"/>` + t12(x + bw / 2, B + 18, labels[i]); });
+  return svgWrap(W, H, s);
+}
+function figLine(labels, vals, ymax, unit) {
+  const W = 340, H = 230, L = 44, R = 16, B = 190, top = 26, n = vals.length, dx = (W - L - R - 40) / (n - 1);
+  let s = t12(L - 8, top - 10, `(${unit})`, 'end');
+  for (let v = 0; v <= ymax; v++) { const y = B - v / ymax * (B - top);
+    s += `<line x1="${L}" y1="${y}" x2="${W - R}" y2="${y}" stroke="${v % 5 ? '#e0e0e0' : '#999'}" stroke-width="1"/>` + (v % 5 === 0 ? t12(L - 8, y + 4, v, 'end') : ''); }
+  const pts = vals.map((v, i) => [L + 20 + dx * i, B - v / ymax * (B - top)]);
+  s += `<polyline points="${pts.map(p => p.join(',')).join(' ')}" stroke="#2a5db0"/>` + pts.map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#2a5db0" stroke="none"/>` + t12(p[0], B + 18, labels[i])).join('');
+  return svgWrap(W, H, s);
+}
+function figClock(h, m) {
+  const cx = 100, cy = 100; let s = `<circle cx="${cx}" cy="${cy}" r="90" fill="#fff"/>`;
+  for (let i = 1; i <= 12; i++) { const a = i * Math.PI / 6; s += T(cx + 70 * Math.sin(a), cy - 70 * Math.cos(a) + 5, i); }
+  for (let i = 0; i < 60; i++) { const a = i * Math.PI / 30, r1 = i % 5 ? 85 : 80; s += `<line x1="${cx + r1 * Math.sin(a)}" y1="${cy - r1 * Math.cos(a)}" x2="${cx + 90 * Math.sin(a)}" y2="${cy - 90 * Math.cos(a)}" stroke-width="1"/>`; }
+  const ah = ((h % 12) * 30 + m / 2) * Math.PI / 180, am = m * 6 * Math.PI / 180;
+  s += `<line x1="${cx}" y1="${cy}" x2="${cx + 42 * Math.sin(ah)}" y2="${cy - 42 * Math.cos(ah)}" stroke-width="5" stroke-linecap="round"/>` +
+    `<line x1="${cx}" y1="${cy}" x2="${cx + 60 * Math.sin(am)}" y2="${cy - 60 * Math.cos(am)}" stroke-width="3" stroke-linecap="round"/><circle cx="${cx}" cy="${cy}" r="4" fill="currentColor"/>`;
+  return svgWrap(200, 200, s);
+}
+function figNumLine(k, d) {   // 0〜2 の数直線。1 を d こに分けた目もり、k番目に ↓
+  const x0 = 24, u = 160, y = 62; let s = `<line x1="${x0 - 8}" y1="${y}" x2="${x0 + 2 * u + 12}" y2="${y}"/>`;
+  for (let i = 0; i <= 2 * d; i++) { const x = x0 + u * i / d, big = i % d === 0; s += `<line x1="${x}" y1="${y - (big ? 10 : 6)}" x2="${x}" y2="${y + (big ? 10 : 6)}"/>` + (big ? T(x, y + 30, i / d) : ''); }
+  const ax = x0 + u * k / d;
+  s += `<line x1="${ax}" y1="14" x2="${ax}" y2="${y - 10}" stroke-width="3"/><polygon points="${ax - 6},${y - 20} ${ax + 6},${y - 20} ${ax},${y - 6}" fill="currentColor"/>`;
+  return svgWrap(x0 * 2 + 2 * u + 4, 100, s);
+}
+function figCross(W, H, a, b) {   // 大きな長方形の4すみをのぞいた十字形
+  const s = Math.min(22, 240 / W, 120 / H), x0 = 40, y0 = 28, w = W * s, h = H * s, cw = a * s, ch = b * s;
+  const P = [[cw, 0], [w - cw, 0], [w - cw, ch], [w, ch], [w, h - ch], [w - cw, h - ch], [w - cw, h], [cw, h], [cw, h - ch], [0, h - ch], [0, ch], [cw, ch]].map(p => `${x0 + p[0]},${y0 + p[1]}`).join(' ');
+  return svgWrap(x0 + w + 50, y0 + h + 30,
+    `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" ${DASH} stroke="#888"/><polygon points="${P}" fill="#cfeff5"/>` +
+    T(x0 + w / 2, y0 - 8, `${W}m`) + T(x0 - 8, y0 + h / 2 + 5, `${H}m`, 'end') + T(x0 + cw / 2, y0 + h + 20, `${a}m`) + T(x0 + w + 8, y0 + ch / 2 + 5, `${b}m`, 'start'));
+}
+function figRectRhombus(W, H) {   // 長方形の各辺の真ん中の点をむすんだひし形
+  const s = Math.min(20, 230 / W, 110 / H), x0 = 44, y0 = 28, w = W * s, h = H * s;
+  return svgWrap(x0 + w + 30, y0 + h + 14,
+    `<rect x="${x0}" y="${y0}" width="${w}" height="${h}"/><polygon points="${x0 + w / 2},${y0} ${x0 + w},${y0 + h / 2} ${x0 + w / 2},${y0 + h} ${x0},${y0 + h / 2}" fill="#cfeff5"/>` +
+    T(x0 + w / 2, y0 - 8, `${W}cm`) + T(x0 - 8, y0 + h / 2 + 5, `${H}cm`, 'end'));
+}
+function figCircles(D, n) {   // 大きな円の直径にそって、同じ大きさの円が n こ ぴったりならぶ
+  const R = 70, cx = 110, cy = 90, r = R / n; let s = `<circle cx="${cx}" cy="${cy}" r="${R}"/>`;
+  for (let j = 0; j < n; j++) s += `<circle cx="${cx - R + r * (2 * j + 1)}" cy="${cy}" r="${r}" fill="#eef3fb"/>`;
+  return svgWrap(220, 190, s + T(cx, cy + R + 20, `直径 ${D}cm`));
+}
+
+const BAR_SETS = [
+  { t: '9月の貸し出し冊数', u: '冊', L: ['1年', '2年', '3年', '4年', '5年', '6年'], g: 100, k: 100 },
+  { t: 'すきなスポーツ別の人数', u: '人', L: ['サッカー', 'やきゅう', '水泳', 'バスケ', 'なわとび'], g: 2, k: 2 },
+  { t: 'ほけん室に来た人数', u: '人', L: ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日'], g: 1, k: 1 },
+];
+const CHANGE_G = ['1日の1時間ごとの気温のうつりかわり', '1年間の月ごとの体重の変わり方', '5年間の学校の人数のうつりかわり', '1日の水温の変わり方', '1か月の日ごとの図書室の利用者数の変わり方'];
+const COMPARE_G = ['クラスのすきな給食メニューの人数', '学年ごとの図書室の貸し出し冊数', 'すきなスポーツ別の人数', '5年生の町べつの人口', 'ほけん室に来た人数（曜日べつ）'];
+const SHIKI = [   // 数量の関係を表す式を選ぶ
+  () => { const T = ri(20, 60), a = ri(3, 9); return mch(`りんごが□こあります。あとから${a}こ買ってくると、ぜんぶで${T}こになりました。□を求める式を選びましょう。`, `${T} − ${a}`, [`${T} + ${a}`, `${T} × ${a}`, `${T} ÷ ${a}`], `ぜんたい（${T}こ）から、あとから買った数（${a}こ）をひくと、はじめの数 □ がわかる`, 'shikiAdd'); },
+  () => { const a = ri(3, 9), k = ri(3, 9), T = a * k; return mch(`□人の子どもに、1人に${a}まいずつおりがみを配ると、ぜんぶで${T}まい必要でした。□を求める式を選びましょう。`, `${T} ÷ ${a}`, [`${T} × ${a}`, `${T} − ${a}`, `${T} + ${a}`], `（1人分）×（人数）＝（ぜんたい）なので、人数 □ ＝ ${T} ÷ ${a}`, 'shikiDiv'); },
+  () => { const b = ri(3, 9), k = ri(3, 9), A = b * k; return mch(`${A}このあめを、□人で同じ数ずつ分けると、1人分は${b}こになりました。□を求める式を選びましょう。`, `${A} ÷ ${b}`, [`${A} × ${b}`, `${b} ÷ ${A}`, `${A} − ${b}`], `ぜんぶの数 ÷ 1人分の数 ＝ 人数`, 'shikiDiv2'); },
+  () => { const L = fmt(ri(2, 8), 1), W = ri(3, 9) * 10; return mch(`${L}mの重さが${W}gの針金があります。この針金1mの重さを求める式を選びましょう。`, `${W} ÷ ${L}`, [`${W} × ${L}`, `${L} ÷ ${W}`, `${W} + ${L}`], `1mの重さ ＝ ${W}g ÷ ${L}（長さ ${L}m で わる）`, 'shikiUnit'); },
+];
+
+Object.assign(MATH, {
+  '表とグラフ': [
+    // 二次元の表：どのらんか
+    () => { const t = pick(TB), k = ri(0, 2), r = ri(0, 1), c = ri(0, 1), N = ri(24, 40);
+      const idx = k === 0 ? r * 3 + c : k === 1 ? r * 3 + 2 : 6 + c;
+      const what = k === 0 ? `「${t.r[r]}」で、「${t.c[c]}」と答えた人` : k === 1 ? `「${t.r[r]}」と答えた人の合計` : `「${t.c[c]}」と答えた人の合計`;
+      const fig = figTable(t.r, t.c, (i, j) => (i === 2 && j === 2) ? String(N) : TL[i * 3 + j]);
+      return mch(`${N}人にアンケートをして、結果を表にまとめました。次の人数は、表のア〜クのどこに当てはまりますか。<br>${what}`, TL[idx], TL.filter((_, i) => i !== idx),
+        k === 0 ? `たての見出し「${t.r[r]}」と、横の見出し「${t.c[c]}」が重なるところ` : k === 1 ? `「${t.r[r]}」の行の、いちばん右（合計）のらん` : `「${t.c[c]}」の列の、いちばん下（合計）のらん`, 'tblCell', fig); },
+    // 二次元の表：どちらでもない人
+    () => { const t = pick(TB), c = ri(2, 8), a = c + ri(2, 8), b = c + ri(2, 8), N = a + b - c + ri(2, 10), x = N - a - b + c;
+      const fig = figTable(t.r, t.c, (i, j) => i === 0 && j === 0 ? c : i === 0 && j === 2 ? a : i === 2 && j === 0 ? b : i === 2 && j === 2 ? N : i === 1 && j === 1 ? '？' : '');
+      return num(`${N}人にアンケートをしました。「${t.r[0]}」は${a}人、「${t.c[0]}」は${b}人、その両方は${c}人でした。「${t.r[0]}」でも「${t.c[0]}」でもない人（表の？）は何人ですか。`, x, '人',
+        `どちらかに当てはまる人は ${a} + ${b} − ${c} ＝ ${a + b - c}人（両方の人を2回数えないようにする）。${N} − ${a + b - c} ＝ ${x}`, 'tblBoth', fig); },
+    // 棒グラフの読みとり
+    () => { const D = pick(BAR_SETS), v = shuffle([1, 2, 3, 4, 5, 6, 7, 8]).slice(0, D.L.length).map(x => x * D.k), fig = figBar(D.L, v, D.g, D.u);
+      if (Math.random() < 0.5) { const m = v.indexOf(Math.max(...v)); return mch(`「${D.t}」の棒グラフです。いちばん多いのは何ですか。`, D.L[m], D.L.filter((_, i) => i !== m), `いちばん長い棒は ${D.L[m]}（${v[m]}${D.u}）`, 'barMax', fig); }
+      const i = ri(0, D.L.length - 1); let j; do { j = ri(0, D.L.length - 1); } while (j === i);
+      return num(`「${D.t}」の棒グラフです。「${D.L[i]}」と「${D.L[j]}」のちがいは何${D.u}ですか。`, Math.abs(v[i] - v[j]), D.u, `${D.L[i]}は${v[i]}${D.u}、${D.L[j]}は${v[j]}${D.u}。ちがいは ${Math.max(v[i], v[j])} − ${Math.min(v[i], v[j])}`, 'barDiff', fig); },
+    // 折れ線グラフ：変わり方が大きいところ
+    () => { const D = pick([{ t: '5年生のクラスの落とし物の数', u: '個', m: ['4月', '5月', '6月', '7月'] }, { t: 'ある町の正午の気温', u: '度', m: ['10月', '11月', '12月', '1月'] }]);
+      let v, d, mx; do { v = [0, 1, 2, 3].map(() => ri(2, 18)); d = [1, 2, 3].map(i => Math.abs(v[i] - v[i - 1])); mx = Math.max(...d); } while (mx < 3 || d.filter(x => x === mx).length !== 1);
+      const ivs = [1, 2, 3].map(i => `${D.m[i - 1]}から${D.m[i]}`), a = d.indexOf(mx);
+      return mch(`「${D.t}」の折れ線グラフです。変わり方（グラフの線のかたむき）がいちばん大きいのは、いつからいつの間ですか。`, ivs[a], ivs.filter((_, i) => i !== a),
+        `${ivs.map((s, i) => `${s}：${d[i]}${D.u}`).join('、')}。いちばん大きく変わったのは ${ivs[a]}`, 'lineChange', figLine(D.m, v, 20, D.u)); },
+    // どのグラフで表すか
+    () => { const ch = Math.random() < 0.5, s = pick(ch ? CHANGE_G : COMPARE_G);
+      return mch(`「${s}」を表すのに、いちばん向いているグラフはどれですか。`, ch ? '折れ線グラフ' : '棒グラフ', ch ? ['棒グラフ', '絵グラフ'] : ['折れ線グラフ', '絵グラフ'],
+        ch ? '時間がたつにつれた「変わり方」は、折れ線グラフで表す' : '大きさ（多い・少ない）をくらべるときは、棒グラフで表す', 'graphKind'); },
+  ],
+  '時こくと時間': [
+    () => { const h = ri(1, 12), m = ri(0, 11) * 5, ap = pick(['午前', '午後']), f = (x, y) => `${x}時${y}分`, ans = f(h, m);
+      const cand = [f(m / 5 || 12, (h % 12) * 5), f(h % 12 + 1, m), f((h + 10) % 12 + 1, m), f(h, (m + 10) % 60), f(h, (m + 50) % 60)];
+      return mch(`次の時計は、${ap}の時刻を表しています。何時何分でしょう。`, ans, cand.filter(x => x !== ans).slice(0, 3), `短いはり（${h}の近く）が「時」、長いはり（${m / 5 || 12}の目もり）が「分」。長いはりは 数字1つで5分。${ans}`, 'clock', figClock(h, m)); },
+    () => { const back = Math.random() < 0.5, d = pick([25, 30, 35, 40, 45, 50, 55, 65, 70, 75, 85]), act = pick(['ピザやき', 'そうじ', 'お菓子づくり', '読書']);
+      const st = ri(12, 50) * 5, en = st + d;   // st：はじまり、en：おわり（正午からの分数。st は5分きざみ）
+      const ok = t => t >= 60;
+      if (back) return mch(`${hm(en)}に「${act}」がおわるようにします。「${act}」には${d}分かかります。おそくとも何時何分に始めればよいでしょう。`, hm(st), [en + d, st + 10, st - 10, st + 20, st - 20].filter(ok).slice(0, 3).map(hm), `おわる時刻 ${hm(en)} から ${d}分 さかのぼる → ${hm(st)}`, 'timeBack');
+      return mch(`${hm(st)}に「${act}」を始めました。「${act}」には${d}分かかります。おわるのは何時何分ですか。`, hm(en), [en - d, en + 10, en - 10, en + 20, en - 20].filter(ok).slice(0, 3).map(hm), `はじめの時刻 ${hm(st)} に ${d}分 たす → ${hm(en)}`, 'timeFwd'); },
+  ],
+  '図と式・文章題': [
+    () => pick(SHIKI)(),
+    // 数直線
+    () => { const d = pick([3, 4, 5, 6, 8]); let k; do { k = ri(1, 2 * d - 1); } while (k % d === 0); const g = gcd(k, d);
+      return Object.assign(fracAny(`数直線の ↓ が表す数を、分数で答えましょう（1を${d}等分した目もりです）。`, k / g, d / g, `1を${d}等分した1目もりは 1/${d}。0から ${k}目もり目なので ${k}/${d}。約分できるときは約分する`, 'numLine'), { fig: figNumLine(k, d) }); },
+    // 十字形の面積（式）
+    () => { const a = ri(1, 3), b = ri(1, 3), W = ri(2 * a + 2, 2 * a + 6), H = ri(2 * b + 2, 2 * b + 5);
+      return mch(`図のような十字形の花だん（色をつけた部分）があります。4すみの白い長方形は、すべて たて${b}m・よこ${a}m です。大きな長方形から4すみをひいて、面積を求める式を選びましょう。`, `${W} × ${H} − ${a} × ${b} × 4`,
+        [`${W} × ${H} − ${a} × ${b}`, `${W} × ${H} − ${a} × ${b} × 2`, `${W} × ${H} + ${a} × ${b} × 4`], `大きな長方形（${W}×${H}）から、4すみの長方形（${a}×${b}）を4つ分ひく`, 'crossExpr', figCross(W, H, a, b)); },
+    // 十字形の面積（答え）
+    () => { const a = ri(1, 3), b = ri(1, 3), W = ri(2 * a + 2, 2 * a + 6), H = ri(2 * b + 2, 2 * b + 5);
+      return num(`図のような十字形の花だん（色をつけた部分）の面積は何m²ですか。4すみの白い長方形は、すべて たて${b}m・よこ${a}m です。`, W * H - a * b * 4, 'm²', `大きな長方形 ${W} × ${H} ＝ ${W * H}。4すみは ${a} × ${b} × 4 ＝ ${a * b * 4}。${W * H} − ${a * b * 4} ＝ ${W * H - a * b * 4}`, 'crossArea', figCross(W, H, a, b)); },
+    // ひし形（長方形の半分）
+    () => { const W = ri(4, 12), H = ri(2, 6) * 2;
+      return num(`たて${H}cm、よこ${W}cmの長方形の、各辺の真ん中の点をむすんで、ひし形をかきました。ひし形（色をつけた部分）の面積は何cm²ですか。`, W * H / 2, 'cm²', `ひし形は、長方形の面積の半分になる。${W} × ${H} ÷ 2 ＝ ${W * H / 2}（対角線 ${W}cm と ${H}cm から ${W} × ${H} ÷ 2 でも同じ）`, 'rhombusHalf', figRectRhombus(W, H)); },
+    // 料金の比べ方
+    () => { let n, P, c, best;
+      do { n = ri(2, 4) * 11 + ri(1, 9); P = ri(11, 24) * 100; const s = Math.floor(n / 11), r = n % 11; c = [100 * n, 1000 * s + 100 * r, P]; best = Math.min(...c); } while (c.filter(x => x === best).length !== 1);
+      const s = Math.floor(n / 11), r = n % 11, o = [`1まい券を${n}まい買う。`, `11まいつづりを${s}つ買い、1まい券を${r}まい買う。`, `乗りほうだい券（${P}円）を買う。`], i = c.indexOf(best);
+      return mch(`遊園地で、乗り物券を${n}まい使います。1まい券は1まい100円、11まいつづりは1つ1000円、乗りほうだい券は${P}円です。いちばん安い買い方はどれですか。`, o[i], o.filter((_, j) => j !== i), `代金は、${o.map((x, j) => `${['①', '②', '③'][j]}${c[j]}円`).join('、')}。いちばん安いのは ${o[i]}`, 'ticketCost'); },
+    // 何をしらべればよいか
+    () => { const n = pick([5, 10]), k = ri(20, 50);
+      return mch(`書店のレジで、前から${k}番目に並んでいます。列に並んでいる人は同じ進み方で進んでいます。だいたい何分後に自分の番がくるかを知るには、何を調べればよいでしょう。`, `${n}分間に何人が会計をすませたか。`, [`${n}人で何mの列になっているか。`, `${n}mで何人ならんでいるか。`, `${n}分後は何時何分になっているか。`], `「一定の時間に進む人数」がわかれば、あと何人（${k - 1}人）で何分かかるかが考えられる`, 'investigate'); },
+  ],
+  '整数・単位・円': [
+    () => { const a = ri(2, 9), b = ri(1, 9), N = a * 10000 + b * 1000, p = ri(1, 3);
+      if (p === 1) return num(`${N}は、${a * 10000}と□をあわせた数です。□に当てはまる数を答えましょう。`, b * 1000, '', `${N} ＝ ${a * 10000} ＋ ${b * 1000}`, 'placeAdd');
+      if (p === 2) return num(`${N}は、□の100倍です。□に当てはまる数を答えましょう。`, N / 100, '', `100倍すると位が2つ上がる。${N} ÷ 100 ＝ ${N / 100}`, 'placeTimes');
+      return num(`${N}は、${N / 1000}を□こ集めた数です。□に当てはまる数を答えましょう。`, 1000, '', `${N / 1000} の1000倍が ${N}`, 'placeCount'); },
+    () => { if (Math.random() < 0.5) { const k = ri(2, 300); return num(`${k * 10000}m²は何haですか。`, k, 'ha', `1ha ＝ 10000m²。${k * 10000} ÷ 10000 ＝ ${k}`, 'haFrom'); }
+      const k = ri(2, 90); return num(`${k}haは何m²ですか。`, k * 10000, 'm²', `1ha ＝ 10000m²。${k} × 10000 ＝ ${k * 10000}`, 'haTo'); },
+    () => { const n = ri(2, 5), r = ri(3, 8), D = 2 * n * r;
+      return num(`直径${D}cmの大きな円の中に、同じ大きさの円が${n}こ、直径にそって横一列にぴったりならんでいます。小さい円の半径は何cmですか。`, r, 'cm', `${n}この円の直径をあわせると ${D}cm。小さい円1この直径は ${D} ÷ ${n} ＝ ${D / n}cm。半径はその半分で ${r}cm`, 'circleR', figCircles(D, n)); },
+  ],
+});
 const MATH_UNITS = Object.keys(MATH);
