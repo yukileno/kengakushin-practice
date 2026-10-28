@@ -914,6 +914,8 @@ setInterval(checkForUpdate, 3 * 60 * 1000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 window.addEventListener('focus', checkForUpdate);
 
+// 開いているタブのアドレスに #teacher を付けただけでも、先生用メニューが開く
+window.addEventListener('hashchange', () => { if (location.hash === '#teacher') teacher(); });
 if (location.hash === '#teacher') teacher(); else home();
 </script>
 </body>
