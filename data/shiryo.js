@@ -501,10 +501,13 @@ const SHIRYO = (() => {
 
   window.SHIRYO_PARTS = { table, para, bar, line, shiryo, NOTE };   // 「じっくり」（data/jikkuri.js）でも使う
 
-  return RAW.map(r => ({
-    unit: r.subj, text: r.q, kind: 'choice', ans: [r.right], alt: [], hint: r.hint || '資料を ぜんぶ 見て、えらんで おしてね。', choices: [r.right].concat(r.wrong), explain: r.explain, key: 'r:' + r.id,
-    figFirst: true,
-    fig: `<p class="intro">${E(r.intro)}</p>${r.res.join('')}${r.talk ? talk(r.talk) : ''}`
-  }));
+  // 答えが数字の問題は、選択式にせず、数字を入力して答える（検索練習のため）。バスの問題は時刻を入力する
+  const base = r => ({ unit: r.subj, explain: r.explain, key: 'r:' + r.id, figFirst: true, fig: `<p class="intro">${E(r.intro)}</p>${r.res.join('')}${r.talk ? talk(r.talk) : ''}` });
+  return RAW.map(r => {
+    const m = !r.q.includes('選びましょう') && r.right.match(/^(\d+(?:\.\d+)?)\s*\D*$/);
+    if (m) return Object.assign(base(r), { text: r.q, kind: 'text', isNum: true, ans: [m[1]], alt: [], hint: '資料を ぜんぶ 見て、数字だけ 入力しよう（単位は 書かなくてOK）。', choices: null });
+    if (r.id === 'kok-bus') return Object.assign(base(r), { text: 'いちばんおそいバスは、何時何分発ですか。「○時○分」の形で入力しましょう（れい：8時45分）。', kind: 'text', isNum: false, ans: ['8時45分', '8:45', '8時45'], alt: [], hint: '資料を ぜんぶ 見て、入力しよう。', choices: null });
+    return Object.assign(base(r), { text: r.q, kind: 'choice', ans: [r.right], alt: [], hint: r.hint || '資料を ぜんぶ 見て、えらんで おしてね。', choices: [r.right].concat(r.wrong) });
+  });
 })();
 const SHIRYO_UNITS = ['社会', '算数', '国語'];

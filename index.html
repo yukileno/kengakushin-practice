@@ -692,8 +692,9 @@ window.selfTest = function () {
   const bad = [];
   MATH_UNITS.forEach(u => MATH[u].forEach((g, i) => { for (let k = 0; k < 300; k++) {
     const q = g();
-    const probe = q.kind === 'frac' ? q.show.replace(/（.*$/, '') : q.kind === 'choice' ? q.ans[0] : q.ans;
+    const probe = q.kind === 'frac' ? q.show.replace(/（.*$/, '') : (q.kind === 'choice' || q.kind === 'text') ? q.ans[0] : q.ans;
     if (judge(q, probe, false).st !== 'ok') bad.push([u, i, q.html, probe]);
+    if (q.kind === 'text') q.ans.forEach(a => { if (judge(q, a, false).st !== 'ok') bad.push([u, i, q.html, a, 'ans']); });
     if (q.kind === 'choice') {
       if (new Set(q.choices).size !== q.choices.length || q.choices.length < 3 || !q.choices.includes(q.ans[0])) bad.push([u, i, q.html, '選択肢の不備']);
       q.choices.filter(c => c !== q.ans[0]).forEach(c => { if (judge(q, c, false).st !== 'ng') bad.push([u, i, q.html, c, 'wrong-is-ok']); });
@@ -715,10 +716,12 @@ window.selfTest = function () {
   });
   SHIRYO.forEach(q => {
     const Q = wordQ(q);
-    if (new Set(q.choices).size !== q.choices.length) bad.push([q.key, '選択肢の重複']);
-    if (q.choices.length < 2 || !q.choices.includes(q.ans[0])) bad.push([q.key, '選択肢の不備']);
-    if (judge(Q, q.ans[0], false).st !== 'ok') bad.push([q.key, 'right-not-ok']);
-    q.choices.filter(c => c !== q.ans[0]).forEach(c => { if (judge(Q, c, false).st !== 'ng') bad.push([q.key, c, 'wrong-is-ok']); });
+    if (q.kind === 'choice') {
+      if (new Set(q.choices).size !== q.choices.length) bad.push([q.key, '選択肢の重複']);
+      if (q.choices.length < 2 || !q.choices.includes(q.ans[0])) bad.push([q.key, '選択肢の不備']);
+      q.choices.filter(c => c !== q.ans[0]).forEach(c => { if (judge(Q, c, false).st !== 'ng') bad.push([q.key, c, 'wrong-is-ok']); });
+    }
+    q.ans.forEach(a => { if (judge(Q, a, false).st !== 'ok') bad.push([q.key, a, 'right-not-ok']); });
     if (!q.fig) bad.push([q.key, '資料なし']);
   });
   JIKKURI.forEach(p => {
