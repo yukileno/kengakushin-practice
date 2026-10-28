@@ -40,6 +40,9 @@ button.ghost{background:#fff;color:var(--sub);border:1px solid var(--line);borde
 .q{font-size:1.45rem;line-height:2;margin:6px 0 14px;word-break:break-word}
 .fig{margin:0 0 14px;color:var(--ink)}
 .homewrap{text-align:center;padding-top:6vh}
+.tmode{display:inline-block;background:#fff7d6;border:2px solid #e0b300;border-radius:999px;padding:4px 14px;margin:0 0 10px;font-size:.85rem}
+.update-bar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:12px;padding:10px 16px;background:#1e293b;color:#fff;border:2px solid #fde047;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.35);font-weight:700}
+.update-bar button{padding:6px 14px;border-radius:999px;cursor:pointer;font:inherit}
 .lead{font-size:1.1rem;color:var(--sub);margin:0 0 22px}
 .bigbtns{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:18px}
 .bigbtn{width:min(44vw,260px);min-width:150px;aspect-ratio:1/0.8;border:0;border-radius:22px;background:var(--main);color:#fff;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:0 4px 0 var(--main-d)}
@@ -322,8 +325,9 @@ const KISO = ['算数', '社会', '国語'];
 const LABEL = { 'しりょう': '資料の読み取り', 'じっくり': '全国学力テストへの道' };   // 画面に出す名前（内部の名前は そのまま）
 const lab = s => LABEL[s] || s;
 const isDone = s => !!getDone()[s] || achieveRate(s) >= 0.9999;   // 100%（一度でも）
-const skipOn = () => lsGet('kgk_skip', '0') === '1';                // 先生用メニューで、問題の「スキップ」ボタンを出す
-const unlockAll = () => lsGet('kgk_unlock', '0') === '1';          // 先生用メニューで、ぜんぶ ひらく
+const teacherOn = () => lsGet('kgk_teacher', '0') === '1';           // 先生モード（問題の確認用）：スキップボタンを出す＋ぜんぶ ひらく
+const skipOn = teacherOn;
+const unlockAll = () => teacherOn() || lsGet('kgk_unlock', '0') === '1';          // 先生用メニューで、ぜんぶ ひらく
 const needOf = s => s === 'しりょう' ? '基礎（算数・社会・国語）が 全部 100% になると 挑戦できるよ' : s === 'じっくり' ? `発展（${lab('しりょう')}）が 100% になると 挑戦できるよ` : '';
 const isOpen = s => unlockAll() || (s === 'しりょう' ? KISO.every(isDone) : s === 'じっくり' ? isDone('しりょう') : true);
 const miniArt = s => ART[s] ? `<canvas class="mini" data-s="${s}" style="--ar:${ART[s].w}/${ART[s].h}" aria-label="${lab(s)}の達成ドット絵"></canvas><small class="pc">たっせい ${Math.floor(achieveRate(s) * 100)}%</small>` : '';
@@ -335,6 +339,7 @@ function home() {
   app.innerHTML = `
   <div class="homewrap">
     <h1>県学診練習</h1>
+    ${teacherOn() ? '<div class="tmode">先生モード中（スキップボタンあり・ぜんぶ ひらいています）　<a href="#teacher" id="tmoff">オフにする</a></div>' : ''}
     <p class="lead">やりたい 教科を 押してね。すぐ 問題が 出るよ！</p>
     <div class="cats">
       <section class="cat"><h2 class="cath k1">基礎</h2><div class="bigbtns">
@@ -646,6 +651,14 @@ function teacher() {
   const pend = Object.keys(stats.pend).length;
   app.innerHTML = `
   <h1>せんせい用</h1>
+  <div class="card"><h2>先生モード（問題の確認用）</h2>
+    <div class="row"><span>スキップボタン（きろくに残らない）＋ 全教科・「${lab('しりょう')}」「${lab('じっくり')}」をぜんぶ ひらく</span>
+      <div class="seg" role="group" aria-label="先生モード">
+        <button data-tm="0" class="${!teacherOn() ? 'on' : ''}">オフ</button>
+        <button data-tm="1" class="${teacherOn() ? 'on' : ''}">オン（先生用）</button>
+      </div></div>
+    <div class="small" style="margin-top:6px">オンの間は、トップ画面に「先生モード中」と出ます。児童の端末では、オフのままにしてください。</div>
+  </div>
   <div class="card"><h2>設定</h2>
     <div class="row"><span>社会・国語（入力式）の判定</span>
       <div class="seg" role="group" aria-label="判定">
@@ -656,11 +669,6 @@ function teacher() {
       <div class="seg" role="group" aria-label="ロック">
         <button data-unlock="0" class="${!unlockAll() ? 'on' : ''}">ふつう（条件をクリアして ひらく）</button>
         <button data-unlock="1" class="${unlockAll() ? 'on' : ''}">ぜんぶ ひらく</button>
-      </div></div>
-    <div class="row" style="margin-top:10px"><span>問題の「スキップ」ボタン（きろくに残らない）</span>
-      <div class="seg" role="group" aria-label="スキップ">
-        <button data-skip="0" class="${!skipOn() ? 'on' : ''}">出さない</button>
-        <button data-skip="1" class="${skipOn() ? 'on' : ''}">出す（先生用）</button>
       </div></div>
     <div class="row" style="margin-top:10px"><label class="small" for="nm">名前（CSVに入ります）</label>
       <input id="nm" value="${esc(getName())}" maxlength="20" style="font-size:1rem;padding:6px 10px;border:1px solid var(--line);border-radius:8px;width:160px" autocomplete="off"></div>
@@ -673,7 +681,7 @@ function teacher() {
   <div class="row"><button class="ghost" id="back">もどる</button><button class="ghost" id="csv">きろくをCSVで保存</button><button class="ghost" id="reset">きろくを消す</button></div>
   <div class="small" style="margin-top:8px">きろくは、この端末のブラウザの中だけに保存されます（外には送りません）。</div>`;
   app.querySelectorAll('[data-easy]').forEach(b => b.onclick = () => { lsSet('kgk_easy', b.dataset.easy); teacher(); });
-  app.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => { lsSet('kgk_skip', b.dataset.skip); teacher(); });
+  app.querySelectorAll('[data-tm]').forEach(b => b.onclick = () => { lsSet('kgk_teacher', b.dataset.tm); teacher(); });
   app.querySelectorAll('[data-unlock]').forEach(b => b.onclick = () => { lsSet('kgk_unlock', b.dataset.unlock); teacher(); });
   $('#nm').onchange = e => setName(e.target.value);
   $('#back').onclick = home; $('#csv').onclick = downloadCsv;
@@ -876,6 +884,36 @@ function jkBind() {
   on('#jkquit', jkList);
   on('#jkskip', () => { if (st.i === JIKKURI.length - 1) jkList(); else jkStart(st.i + 1); });
 }
+/* ---------- 新しいバージョンの自動チェック（タブを開きっぱなしの端末向け） ----------
+   index.html の Last-Modified / ETag が、読みこみ時から変わったら更新する。ホーム画面なら自動で再読みこみ、問題の途中ならボタンを出す */
+const upd = { base: null, notified: false };
+async function deploySig() {
+  try {
+    const r = await fetch('index.html', { method: 'HEAD', cache: 'no-store' });
+    if (!r.ok) return null;
+    return (r.headers.get('last-modified') || '') + '|' + (r.headers.get('etag') || '');
+  } catch (e) { return null; }   // オフラインなどのときは何もしない
+}
+async function checkForUpdate() {
+  if (upd.notified) return;
+  const sig = await deploySig();
+  if (!sig || sig === '|') return;
+  if (upd.base === null) { upd.base = sig; return; }
+  if (sig === upd.base) return;
+  upd.notified = true;
+  if (document.querySelector('.homewrap')) { location.reload(); return; }   // 問題の途中では、勝手に再読みこみしない
+  const bar = document.createElement('div');
+  bar.className = 'update-bar';
+  bar.innerHTML = '<span>🆕 新しいバージョンがあるよ！</span><button type="button">いま更新する</button>';
+  bar.querySelector('button').onclick = () => location.reload();
+  document.body.appendChild(bar);
+}
+document.addEventListener('click', e => { if (e.target.id === 'tmoff') { e.preventDefault(); teacher(); } });   // 「オフにする」→ 先生用メニューへ
+checkForUpdate();
+setInterval(checkForUpdate, 3 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
+window.addEventListener('focus', checkForUpdate);
+
 if (location.hash === '#teacher') teacher(); else home();
 </script>
 </body>
