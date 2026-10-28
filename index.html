@@ -322,6 +322,7 @@ const KISO = ['算数', '社会', '国語'];
 const LABEL = { 'しりょう': '資料の読み取り', 'じっくり': '全国学力テストへの道' };   // 画面に出す名前（内部の名前は そのまま）
 const lab = s => LABEL[s] || s;
 const isDone = s => !!getDone()[s] || achieveRate(s) >= 0.9999;   // 100%（一度でも）
+const skipOn = () => lsGet('kgk_skip', '0') === '1';                // 先生用メニューで、問題の「スキップ」ボタンを出す
 const unlockAll = () => lsGet('kgk_unlock', '0') === '1';          // 先生用メニューで、ぜんぶ ひらく
 const needOf = s => s === 'しりょう' ? '基礎（算数・社会・国語）が 全部 100% になると 挑戦できるよ' : s === 'じっくり' ? `発展（${lab('しりょう')}）が 100% になると 挑戦できるよ` : '';
 const isOpen = s => unlockAll() || (s === 'しりょう' ? KISO.every(isDone) : s === 'じっくり' ? isDone('しりょう') : true);
@@ -536,11 +537,11 @@ function render() {
     <div class="q${q.figFirst ? ' sm' : ''}">${q.html}</div>
     ${!q.figFirst && q.fig ? `<div class="fig">${q.fig}</div>` : ''}
     ${body}
-    <div class="row" style="margin-top:16px"><button class="ghost" id="quit">おわる</button></div>
+    <div class="row" style="margin-top:16px"><button class="ghost" id="quit">おわる</button>${skipOn() ? '<button class="ghost" id="skip">スキップ（先生用）</button>' : ''}</div>
   </div>${art ? `</div><div class="artbox"><canvas id="art" style="--ar:${art.w}/${art.h}" aria-label="達成のドット絵"></canvas><div class="pc" id="artpc"></div></div></div>` : ''}`;
   if (art) drawArt(R.subject);
   const on = (id, f) => { const e = $(id); if (e) e.onclick = f; };
-  on('#go', submit); on('#show', giveUp); on('#nx', next); on('#rego', retype); on('#quit', home);
+  on('#go', submit); on('#skip', skipQ); on('#show', giveUp); on('#nx', next); on('#rego', retype); on('#quit', home);
   app.querySelectorAll('button.choice').forEach(b => b.onclick = () => chooseAns(q.choices[+b.dataset.c]));
   const fields = q.kind === 'frac' ? [...app.querySelectorAll('input.fi')] : [$('#ans') || $('#re')].filter(Boolean);
   fields.forEach(field => field.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); (ph === 'ask' ? submit : retype)(); } }));
@@ -592,6 +593,11 @@ function submit() {
     result(it, true); R.phase = 'ok'; render();
     R.timer = setTimeout(next, 650);        // せいかいなら、すぐ つぎへ
   } else { result(it, false); R.phase = 'ng'; R.msg = ''; R.draft = null; render(); }
+}
+function skipQ() {   // 先生用：この問題を とばす（正誤も、まちがい直しも、記録しない）
+  clearTimeout(R.timer);
+  if (R.phase === 'ask') R.n--;   // まだ答えていない問題は、出題数に数えない
+  next();
 }
 function giveUp() { R.draft = null; R.last = ''; result(R.cur, false); R.phase = R.cur.q.kind === 'choice' ? 'fixed' : 'ng'; R.msg = ''; render(); }
 function chooseAns(v) {   // 選択式：えらんだ答えを判定（まちがえたら、答えを見せて つぎへ）
@@ -651,6 +657,11 @@ function teacher() {
         <button data-unlock="0" class="${!unlockAll() ? 'on' : ''}">ふつう（条件をクリアして ひらく）</button>
         <button data-unlock="1" class="${unlockAll() ? 'on' : ''}">ぜんぶ ひらく</button>
       </div></div>
+    <div class="row" style="margin-top:10px"><span>問題の「スキップ」ボタン（きろくに残らない）</span>
+      <div class="seg" role="group" aria-label="スキップ">
+        <button data-skip="0" class="${!skipOn() ? 'on' : ''}">出さない</button>
+        <button data-skip="1" class="${skipOn() ? 'on' : ''}">出す（先生用）</button>
+      </div></div>
     <div class="row" style="margin-top:10px"><label class="small" for="nm">名前（CSVに入ります）</label>
       <input id="nm" value="${esc(getName())}" maxlength="20" style="font-size:1rem;padding:6px 10px;border:1px solid var(--line);border-radius:8px;width:160px" autocomplete="off"></div>
   </div>
@@ -662,6 +673,7 @@ function teacher() {
   <div class="row"><button class="ghost" id="back">もどる</button><button class="ghost" id="csv">きろくをCSVで保存</button><button class="ghost" id="reset">きろくを消す</button></div>
   <div class="small" style="margin-top:8px">きろくは、この端末のブラウザの中だけに保存されます（外には送りません）。</div>`;
   app.querySelectorAll('[data-easy]').forEach(b => b.onclick = () => { lsSet('kgk_easy', b.dataset.easy); teacher(); });
+  app.querySelectorAll('[data-skip]').forEach(b => b.onclick = () => { lsSet('kgk_skip', b.dataset.skip); teacher(); });
   app.querySelectorAll('[data-unlock]').forEach(b => b.onclick = () => { lsSet('kgk_unlock', b.dataset.unlock); teacher(); });
   $('#nm').onchange = e => setName(e.target.value);
   $('#back').onclick = home; $('#csv').onclick = downloadCsv;
@@ -778,7 +790,7 @@ function jkRender() {
   const stepper = `<div class="jk-steps">${names.map((n, i) => `<div class="${st.step === i + 1 ? 'on' : st.step > i + 1 ? 'done' : ''}">${st.step > i + 1 ? '✓ ' : ''}${n}</div>`).join('')}</div>`;
   const body = st.step === 1 ? jkStep1() : st.step === 2 ? jkStep2() : jkStep3();
   app.innerHTML = `${stepper}<div class="card"><h2><span class="jk-sub">${esc(p.unit)}</span>${esc(p.title)}</h2><p class="small" style="margin:0 0 4px">${esc(p.sub)}</p>${p.docs()}</div><div class="card">${body}</div>
-    <div class="row"><button class="ghost" id="jkquit">おわる（一覧へ）</button></div>`;
+    <div class="row"><button class="ghost" id="jkquit">おわる（一覧へ）</button>${skipOn() ? '<button class="ghost" id="jkskip">スキップ（先生用）</button>' : ''}</div>`;
   jkBind();
 }
 function jkStep1() {
@@ -862,6 +874,7 @@ function jkBind() {
   on('#jknextp', () => { if (st.i === JIKKURI.length - 1) jkList(); else jkStart(st.i + 1); });
   on('#jkagain', () => jkStart(st.i));
   on('#jkquit', jkList);
+  on('#jkskip', () => { if (st.i === JIKKURI.length - 1) jkList(); else jkStart(st.i + 1); });
 }
 if (location.hash === '#teacher') teacher(); else home();
 </script>
